@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wmc-simulator"
+version = "0.1.0"
+description = "Fondasi simulator vertical handover WMC Pekan 3"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+wmc-simulator = "wmc_simulator.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["wmc_simulator*"]
