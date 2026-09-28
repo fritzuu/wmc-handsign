@@ -1,0 +1,11 @@
+{
+  "timestamp_s": 0,
+  "current_network": "lte_1",
+  "velocity_mps": 10,
+  "traffic_class": "streaming",
+  "networks": [
+    {"id": "lte_1", "technology": "4G", "rss_dbm": -86, "data_rate_mbps": 24, "delay_ms": 38, "ber": 0.00001, "available": true},
+    {"id": "nr_1", "technology": "5G", "rss_dbm": -78, "data_rate_mbps": 95, "delay_ms": 16, "ber": 0.000001, "available": true},
+    {"id": "wlan_1", "technology": "WLAN", "rss_dbm": -68, "data_rate_mbps": 54, "delay_ms": 23, "ber": 0.000005, "available": true}
+  ]
+}
