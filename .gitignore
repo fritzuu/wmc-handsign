@@ -41,3 +41,18 @@ results/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+/build/
+.idea/
+*.iml
+*.iws
+.metadata
+.flutter-plugins
+.flutter-plugins-dependencies
+
