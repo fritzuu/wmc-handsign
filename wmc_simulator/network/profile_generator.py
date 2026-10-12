@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import Any, Sequence
 
 from ..models import NetworkSnapshot, ScenarioSnapshot, TECHNOLOGIES, TRAFFIC_CLASSES
 
@@ -316,11 +316,14 @@ def generate_scenario_snapshots(
     seed: int | None = None,
     path_loss_exponent: float = 3.0,
     shadow_fading_std: float = 4.0,
+    mobility_model: Any | None = None,
 ) -> list[ScenarioSnapshot]:
     """Bangkitkan deretan ``ScenarioSnapshot`` untuk simulasi.
 
-    Pengguna bergerak lurus dengan kecepatan ``velocity_mps`` ke arah
-    ``user_direction_deg`` (0° = sumbu-x positif).  Pada setiap
+    Jika ``mobility_model`` diberikan (misalnya ``RandomWaypointModel``),
+    posisi pengguna dan kecepatan diambil dari model mobilitas tersebut.
+    Jika tidak, pengguna bergerak lurus dengan kecepatan ``velocity_mps``
+    ke arah ``user_direction_deg`` (0° = sumbu-x positif).
     langkah, profil jaringan dihitung berdasarkan posisi pengguna
     terhadap setiap node.
 
@@ -372,10 +375,16 @@ def generate_scenario_snapshots(
     vx = velocity_mps * math.cos(direction_rad)
     vy = velocity_mps * math.sin(direction_rad)
 
-    user_x = user_start_x
-    user_y = user_start_y
-    current_network = initial_network
+    if mobility_model is not None:
+        user_x = mobility_model.current_state.position.x
+        user_y = mobility_model.current_state.position.y
+        current_v = mobility_model.current_state.current_speed
+    else:
+        user_x = user_start_x
+        user_y = user_start_y
+        current_v = velocity_mps
 
+    current_network = initial_network
     snapshots: list[ScenarioSnapshot] = []
 
     for step in range(num_steps):
@@ -411,15 +420,21 @@ def generate_scenario_snapshots(
         snapshot = ScenarioSnapshot(
             timestamp_s=round(timestamp, 3),
             current_network=current_network,
-            velocity_mps=velocity_mps,
+            velocity_mps=current_v,
             traffic_class=traffic_class,
             networks=tuple(networks),
         )
         snapshots.append(snapshot)
 
-        # Gerakkan pengguna
-        user_x += vx * dt_s
-        user_y += vy * dt_s
+        # Gerakkan pengguna untuk langkah berikutnya
+        if mobility_model is not None:
+            mob_state = mobility_model.step(dt_s)
+            user_x = mob_state.position.x
+            user_y = mob_state.position.y
+            current_v = mob_state.current_speed
+        else:
+            user_x += vx * dt_s
+            user_y += vy * dt_s
 
     return snapshots
 
