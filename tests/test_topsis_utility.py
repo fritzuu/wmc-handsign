@@ -284,6 +284,27 @@ class TestSingleTopsisUtilityFunction(unittest.TestCase):
         self.assertGreater(result["ping_pong_count"], 0)
         self.assertTrue(0.0 <= result["ping_pong_rate"] <= 1.0)
 
+    def test_13_negative_dbm_rss_benefit_direction(self):
+        """Memverifikasi bahwa nilai RSS negatif (dBm) diperlakukan dengan benar sebagai benefit:
+        -55 dBm (sinyal kuat) harus mendapatkan peringkat lebih tinggi dari -95 dBm (sinyal lemah).
+        """
+        alts = [
+            TopsisAlternative("WeakSignal", {"rss_dbm": -95.0, "data_rate_mbps": 50.0, "delay_ms": 20.0, "ber": 0.001}),
+            TopsisAlternative("StrongSignal", {"rss_dbm": -55.0, "data_rate_mbps": 50.0, "delay_ms": 20.0, "ber": 0.001}),
+        ]
+        res = self.topsis.evaluate(
+            alts,
+            weights={"rss_dbm": 0.5, "data_rate_mbps": 0.2, "delay_ms": 0.2, "ber": 0.1},
+            criteria_names=["rss_dbm", "data_rate_mbps", "delay_ms", "ber"],
+        )
+        self.assertEqual(res.best_alternative_id, "StrongSignal")
+        r_strong = next(r for r in res.rankings if r.alternative_id == "StrongSignal")
+        r_weak = next(r for r in res.rankings if r.alternative_id == "WeakSignal")
+        self.assertGreater(r_strong.utility_score, r_weak.utility_score)
+        self.assertEqual(r_strong.rank, 1)
+        self.assertEqual(r_weak.rank, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
+
