@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HeterogeneousNetworkQoSProfiles",
+  "description": "Spesifikasi kanonis parameter input QoS untuk 4G LTE, 5G NR, dan WLAN pada simulator WMC",
+  "version": "1.0.0",
+  "canonical_units": {
+    "rss": "dBm",
+    "data_rate": "Mbps",
+    "delay": "ms",
+    "ber": "ratio"
+  },
+  "profiles": {
+    "4G": {
+      "technology": "4G",
+      "standard_reference": "3GPP Rel 8-12 / ITU-R M.2134",
+      "display_name": "4G LTE Category 4/6",
+      "coverage_radius_m": 1000.0,
+      "parameters": {
+        "rss_dbm": {
+          "min": -120.0,
+          "max": -50.0,
+          "unit": "dBm",
+          "direction": "benefit",
+          "metric_type": "RSRP",
+          "description": "Reference Signal Received Power per 15kHz subcarrier"
+        },
+        "data_rate_mbps": {
+          "min": 1.0,
+          "max": 100.0,
+          "unit": "Mbps",
+          "direction": "benefit",
+          "metric_type": "Achievable Throughput",
+          "description": "User-experienced downlink transport layer throughput"
+        },
+        "delay_ms": {
+          "min": 10.0,
+          "max": 100.0,
+          "unit": "ms",
+          "direction": "cost",
+          "metric_type": "One-Way Delay",
+          "description": "User-plane RAN latency plus queuing delay"
+        },
+        "ber": {
+          "min": 1e-6,
+          "max": 1e-3,
+          "floor_threshold": 1e-9,
+          "unit": "ratio",
+          "direction": "cost",
+          "metric_type": "Post-FEC Residual BER",
+          "description": "Bit error rate post Turbo decoding"
+        }
+      }
+    },
+    "5G": {
+      "technology": "5G",
+      "standard_reference": "3GPP Rel 15-16 / ITU-R M.2410-0 (IMT-2020 eMBB)",
+      "display_name": "5G NR Sub-6GHz (FR1 n78 100MHz)",
+      "coverage_radius_m": 500.0,
+      "parameters": {
+        "rss_dbm": {
+          "min": -110.0,
+          "max": -40.0,
+          "unit": "dBm",
+          "direction": "benefit",
+          "metric_type": "SS-RSRP",
+          "description": "Synchronization Signal RSRP per 30kHz subcarrier"
+        },
+        "data_rate_mbps": {
+          "min": 50.0,
+          "max": 1000.0,
+          "unit": "Mbps",
+          "direction": "benefit",
+          "metric_type": "Achievable Throughput",
+          "description": "User-experienced downlink transport layer throughput"
+        },
+        "delay_ms": {
+          "min": 1.0,
+          "max": 20.0,
+          "unit": "ms",
+          "direction": "cost",
+          "metric_type": "One-Way Delay",
+          "description": "User-plane RAN latency plus scheduling delay"
+        },
+        "ber": {
+          "min": 1e-8,
+          "max": 1e-5,
+          "floor_threshold": 1e-9,
+          "unit": "ratio",
+          "direction": "cost",
+          "metric_type": "Post-FEC Residual BER",
+          "description": "Bit error rate post LDPC decoding"
+        }
+      }
+    },
+    "WLAN": {
+      "technology": "WLAN",
+      "standard_reference": "IEEE Std 802.11ac/ax 5GHz 80MHz 2x2 MIMO",
+      "display_name": "Wi-Fi 5 / Wi-Fi 6 (VHT80 / HE80)",
+      "coverage_radius_m": 100.0,
+      "parameters": {
+        "rss_dbm": {
+          "min": -90.0,
+          "max": -30.0,
+          "unit": "dBm",
+          "direction": "benefit",
+          "metric_type": "RSSI",
+          "description": "Broadband Received Signal Strength Indicator across 80MHz channel"
+        },
+        "data_rate_mbps": {
+          "min": 1.0,
+          "max": 600.0,
+          "unit": "Mbps",
+          "direction": "benefit",
+          "metric_type": "Goodput",
+          "description": "User-experienced transport layer throughput after MAC CSMA/CA overhead"
+        },
+        "delay_ms": {
+          "min": 5.0,
+          "max": 50.0,
+          "unit": "ms",
+          "direction": "cost",
+          "metric_type": "One-Way Delay",
+          "description": "Channel contention backoff plus frame transmission delay"
+        },
+        "ber": {
+          "min": 1e-7,
+          "max": 1e-4,
+          "floor_threshold": 1e-9,
+          "unit": "ratio",
+          "direction": "cost",
+          "metric_type": "Post-FEC Residual BER",
+          "description": "Bit error rate post BCC/LDPC decoding"
+        }
+      }
+    }
+  }
+}
