@@ -46,16 +46,27 @@ class _DecisionLogScreenState extends State<DecisionLogScreen> {
             color: Colors.white,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
                 children: ['Semua', 'Handover', 'Stay', 'Insufficient'].map((filter) {
                   final isSelected = _selectedFilter == filter;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: FilterChip(
-                      label: Text(filter, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : AppTheme.textPrimary)),
+                      label: Text(
+                        filter,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.white : AppTheme.textPrimary,
+                        ),
+                      ),
                       selected: isSelected,
-                      selectedColor: AppTheme.primaryBlue,
-                      backgroundColor: AppTheme.surfaceBackground,
+                      selectedColor: AppTheme.darkNavy,
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: isSelected ? AppTheme.darkNavy : AppTheme.dividerColor,
+                      ),
                       onSelected: (selected) {
                         if (selected) {
                           setState(() => _selectedFilter = filter);
@@ -110,8 +121,14 @@ class _DecisionRecordCard extends StatelessWidget {
     final badgeColor = isFallback
         ? AppTheme.errorRed
         : (isHandover
-            ? AppTheme.successGreen
-            : (isStay ? AppTheme.primaryBlue : AppTheme.warningOrange));
+            ? AppTheme.darkNavy
+            : (isStay ? AppTheme.surfaceBackground : AppTheme.warningOrange));
+
+    final badgeTextColor = isFallback
+        ? Colors.white
+        : (isHandover
+            ? Colors.white
+            : (isStay ? AppTheme.textPrimary : Colors.white));
 
     final badgeText = isFallback
         ? 'FALLBACK HO'
@@ -129,7 +146,12 @@ class _DecisionRecordCard extends StatelessWidget {
         : 'Sinyal terputus (Link Failure)';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -142,27 +164,30 @@ class _DecisionRecordCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: badgeColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
+                          color: badgeColor,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isStay ? AppTheme.dividerColor : Colors.transparent,
+                          ),
                         ),
                         child: Text(
                           badgeText,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: badgeColor,
+                            color: badgeTextColor,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Langkah #${record.stepIndex} (t = ${record.elapsedSeconds.toStringAsFixed(1)}s)',
+                          'Langkah #${record.stepIndex} (${record.elapsedSeconds.toStringAsFixed(1)}s)',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
                           ),
@@ -178,21 +203,19 @@ class _DecisionRecordCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               titleText,
-              style: TextStyle(
-                fontSize: 13,
+              style: const TextStyle(
+                fontSize: 12.5,
                 fontWeight: FontWeight.bold,
-                color: isFallback
-                    ? AppTheme.errorRed
-                    : (isHandover ? AppTheme.successGreen : AppTheme.textPrimary),
+                color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               'QoS: ${record.qosFactor?.toStringAsFixed(2) ?? '-'} · $hfText · Alasan: ${record.stabilizedReason.name}',
-              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              style: const TextStyle(fontSize: 10.5, color: AppTheme.textSecondary),
             ),
           ],
         ),

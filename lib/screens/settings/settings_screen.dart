@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 
-/// Screens 3, 4, 5 — Konfigurasi Eksperimen, Fuzzy, & Bobot TOPSIS (PRD v1.0/v2.0)
+/// Screens 3, 4, 5 — Konfigurasi Eksperimen, Fuzzy, & Bobot TOPSIS (Minimalist Black & White)
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -13,14 +13,14 @@ class SettingsScreen extends StatelessWidget {
     return const Scaffold(
       body: SingleChildScrollView(
         key: PageStorageKey('settings_scroll_key'),
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _TrafficClassSelectorSection(),
-            SizedBox(height: 20),
+            SizedBox(height: 16),
             _SimulationParametersSection(),
-            SizedBox(height: 20),
+            SizedBox(height: 16),
             _FuzzyTopsisSummaryCard(),
             SizedBox(height: 24),
           ],
@@ -43,20 +43,25 @@ class _TrafficClassSelectorSection extends StatelessWidget {
     );
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.tune, color: AppTheme.primaryBlue, size: 18),
-                const SizedBox(width: 8),
-                const Expanded(
+                Icon(Icons.tune, color: AppTheme.textPrimary, size: 16),
+                SizedBox(width: 8),
+                Expanded(
                   child: Text(
                     'Kelas Aplikasi Aktif (User Preference)',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
@@ -67,25 +72,29 @@ class _TrafficClassSelectorSection extends StatelessWidget {
             const SizedBox(height: 6),
             const Text(
               'Pilih jenis trafik untuk mengubah prioritas bobot TOPSIS dan ambang Fuzzy:',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children: TrafficClass.values.map((tc) {
                 final isSelected = tc == currentClass;
                 return ChoiceChip(
                   label: Text(
                     tc.name[0].toUpperCase() + tc.name.substring(1),
                     style: TextStyle(
+                      fontSize: 11,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected ? Colors.white : AppTheme.textPrimary,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: AppTheme.primaryBlue,
-                  backgroundColor: AppTheme.surfaceBackground,
+                  selectedColor: AppTheme.darkNavy,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                    color: isSelected ? AppTheme.darkNavy : AppTheme.dividerColor,
+                  ),
                   onSelected: (selected) {
                     if (selected) {
                       context.read<SimulationController>().setTrafficClass(tc);
@@ -94,34 +103,45 @@ class _TrafficClassSelectorSection extends StatelessWidget {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             const Divider(),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Ambang Inisiasi Handover (Threshold):',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                const Expanded(
+                  child: Text(
+                    'Ambang Inisiasi Handover (Threshold):',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   currentThreshold.toStringAsFixed(2),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
                 ),
               ],
             ),
-            Slider(
-              value: currentThreshold,
-              min: 0.30,
-              max: 0.85,
-              divisions: 11,
-              label: currentThreshold.toStringAsFixed(2),
-              onChanged: (val) {
-                context.read<SimulationController>().setThreshold(val);
-              },
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: AppTheme.darkNavy,
+                inactiveTrackColor: AppTheme.dividerColor,
+                thumbColor: AppTheme.darkNavy,
+                overlayColor: AppTheme.darkNavy.withValues(alpha: 0.1),
+              ),
+              child: Slider(
+                value: currentThreshold,
+                min: 0.30,
+                max: 0.85,
+                divisions: 11,
+                label: currentThreshold.toStringAsFixed(2),
+                onChanged: (val) {
+                  context.read<SimulationController>().setThreshold(val);
+                },
+              ),
             ),
             Text(
-              'Handover terpicu jika Handover Factor > ${currentThreshold.toStringAsFixed(2)}. Nilai lebih rendah = lebih sensitif/proaktif.',
+              'Handover terpicu jika Handover Factor > ${currentThreshold.toStringAsFixed(2)}. Nilai lebih rendah = lebih sensitif.',
               style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
             ),
           ],
@@ -137,6 +157,11 @@ class _SimulationParametersSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -144,13 +169,13 @@ class _SimulationParametersSection extends StatelessWidget {
           children: [
             const Row(
               children: [
-                Icon(Icons.map, color: AppTheme.primaryBlue, size: 18),
+                Icon(Icons.map_outlined, color: AppTheme.textPrimary, size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Parameter Lingkungan Simulasi',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
@@ -158,18 +183,18 @@ class _SimulationParametersSection extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 20),
+            const Divider(height: 18),
             const _InfoRow(label: 'Dimensi Area', value: '500m × 500m (Boundary Clamped)'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const _InfoRow(label: 'Jaringan Heterogen', value: '4G LTE Macro, 5G NR Small Cell, WLAN AP'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const _InfoRow(label: 'Interval Evaluasi', value: '1.0 detik / tick'),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const _InfoRow(label: 'Model Mobilitas', value: 'Random Waypoint Model (RWP)'),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             OutlinedButton.icon(
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reset Simulasi dengan Seed Baru'),
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Reset Simulasi dengan Seed Baru', style: TextStyle(fontSize: 11.5)),
               onPressed: () {
                 context.read<SimulationController>().reset(newSeed: DateTime.now().millisecondsSinceEpoch);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -190,15 +215,19 @@ class _FuzzyTopsisSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppTheme.lightBlueBg,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.auto_graph, color: AppTheme.primaryBlue, size: 18),
+                Icon(Icons.info_outline, color: AppTheme.textPrimary, size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -206,14 +235,14 @@ class _FuzzyTopsisSummaryCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.deepNavy,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               '1. Tahap Inisiasi (Fuzzy Logic):\n'
               '   Menghitung QoS Factor (FIS 1) dan Handover Factor (FIS 2).\n'
               '   Jika Handover Factor > Ambang, seleksi target diaktifkan.\n\n'
@@ -221,7 +250,7 @@ class _FuzzyTopsisSummaryCard extends StatelessWidget {
               '   Melakukan perangkingan kandidat terbaik berdasarkan bobot AHP kelas trafik aktif.\n\n'
               '3. Penstabil Rekomendasi (Dwell & Hysteresis):\n'
               '   Memastikan target bertahan selama dwell time (3s) dengan gain skor >= 0.05 untuk mengeliminasi efek ping-pong.',
-              style: TextStyle(fontSize: 11, color: AppTheme.deepNavy, height: 1.4),
+              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, height: 1.4),
             ),
           ],
         ),
@@ -242,13 +271,13 @@ class _InfoRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.end,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
           ),
         ),
       ],

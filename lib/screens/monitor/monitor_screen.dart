@@ -4,12 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 
-/// Screen 6 — Live Monitor Cockpit Shell (PRD v1.0/v2.0)
-///
-/// Menampilkan:
-/// - Status ringkas simulasi & kontrol play/pause/step
-/// - Indikator mobilitas pengguna
-/// - Live Network Cards (4G, 5G, Wi-Fi) & Live Decision Banner (Step 3 target)
+/// Screen 6 — Live Monitor Cockpit Shell (Minimalist Black & White)
 class MonitorScreen extends StatelessWidget {
   const MonitorScreen({super.key});
 
@@ -18,16 +13,16 @@ class MonitorScreen extends StatelessWidget {
     return const Scaffold(
       body: SingleChildScrollView(
         key: PageStorageKey('monitor_scroll_key'),
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _MonitorPlaybackBar(),
-            SizedBox(height: 16),
+            SizedBox(height: 14),
             _MobilityPositionQuickCard(),
-            SizedBox(height: 16),
+            SizedBox(height: 14),
             _LiveDecisionBannerPlaceholder(),
-            SizedBox(height: 16),
+            SizedBox(height: 14),
             _LiveNetworkCardsSectionPlaceholder(),
             SizedBox(height: 24),
           ],
@@ -37,7 +32,7 @@ class MonitorScreen extends StatelessWidget {
   }
 }
 
-/// Bar Kontrol Playback & Kemajuan Simulasi
+/// Bar Kontrol Playback & Kemajuan Simulasi (Monokrom Modern)
 class _MonitorPlaybackBar extends StatelessWidget {
   const _MonitorPlaybackBar();
 
@@ -46,38 +41,32 @@ class _MonitorPlaybackBar extends StatelessWidget {
     final stepIndex = context.select<SimulationController, int>((c) => c.stepIndex);
     final elapsedSeconds = context.select<SimulationController, double>((c) => c.elapsedSeconds);
     final isRunning = context.select<SimulationController, bool>((c) => c.isRunning);
-
     final currentSpeed = context.select<SimulationController, int>((c) => c.playbackSpeed);
 
     return Card(
-      elevation: 1,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isRunning
-                        ? AppTheme.successGreen.withValues(alpha: 0.12)
-                        : AppTheme.warningOrange.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isRunning ? Icons.play_circle : Icons.pause_circle,
-                    color: isRunning ? AppTheme.successGreen : AppTheme.warningOrange,
-                    size: 20,
-                  ),
+                Icon(
+                  isRunning ? Icons.play_arrow : Icons.pause,
+                  color: AppTheme.textPrimary,
+                  size: 22,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Langkah $stepIndex · Waktu: ${elapsedSeconds.toStringAsFixed(1)}s',
+                        'Langkah $stepIndex · ${elapsedSeconds.toStringAsFixed(1)}s',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -87,8 +76,8 @@ class _MonitorPlaybackBar extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         isRunning
-                            ? 'Simulasi berjalan live (${currentSpeed}x speed)'
-                            : 'Simulasi terjeda',
+                            ? 'Berjalan (${currentSpeed}x kecepatan)'
+                            : 'Simulasi dijeda',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary,
@@ -101,15 +90,15 @@ class _MonitorPlaybackBar extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.skip_next, size: 22),
-                      tooltip: 'Step (+1s)',
-                      color: AppTheme.primaryBlue,
+                      icon: const Icon(Icons.skip_next, size: 20),
+                      tooltip: 'Maju 1s',
+                      color: AppTheme.textPrimary,
                       onPressed: () => context.read<SimulationController>().step(1.0),
                     ),
                     IconButton(
-                      icon: Icon(isRunning ? Icons.pause : Icons.play_arrow, size: 22),
+                      icon: Icon(isRunning ? Icons.pause : Icons.play_arrow, size: 20),
                       tooltip: isRunning ? 'Jeda' : 'Jalankan',
-                      color: isRunning ? AppTheme.warningOrange : AppTheme.successGreen,
+                      color: AppTheme.textPrimary,
                       onPressed: () {
                         final c = context.read<SimulationController>();
                         if (c.isRunning) {
@@ -120,21 +109,21 @@ class _MonitorPlaybackBar extends StatelessWidget {
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.restart_alt, size: 20),
+                      icon: const Icon(Icons.restart_alt, size: 19),
                       tooltip: 'Reset',
-                      color: AppTheme.textTertiary,
+                      color: AppTheme.textSecondary,
                       onPressed: () => context.read<SimulationController>().reset(),
                     ),
                   ],
                 ),
               ],
             ),
-            const Divider(height: 16),
+            const Divider(height: 18),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  // Playback speed chips
                   const Text(
                     'Speed: ',
                     style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
@@ -149,10 +138,10 @@ class _MonitorPlaybackBar extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.primaryBlue : AppTheme.surfaceBackground,
+                            color: isSelected ? AppTheme.darkNavy : Colors.white,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isSelected ? AppTheme.primaryBlue : AppTheme.dividerColor,
+                              color: isSelected ? AppTheme.darkNavy : AppTheme.dividerColor,
                             ),
                           ),
                           child: Text(
@@ -167,28 +156,35 @@ class _MonitorPlaybackBar extends StatelessWidget {
                       ),
                     );
                   }),
-                  const SizedBox(width: 12),
-                  Container(width: 1, height: 16, color: AppTheme.dividerColor),
-                  const SizedBox(width: 12),
-                  // Fast Forward Shortcuts
+                  const SizedBox(width: 8),
+                  Container(width: 1, height: 14, color: AppTheme.dividerColor),
+                  const SizedBox(width: 8),
                   const Text(
                     'Lompat: ',
                     style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
                   ),
                   ...[10, 50, 100, 500].map((count) {
                     return Padding(
-                      padding: const EdgeInsets.only(right: 6.0),
-                      child: ActionChip(
-                        label: Text(
-                          '+${count}s',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                      padding: const EdgeInsets.only(right: 5.0),
+                      child: InkWell(
+                        onTap: () => context.read<SimulationController>().fastForward(count),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceBackground,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppTheme.dividerColor),
+                          ),
+                          child: Text(
+                            '+${count}s',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
                         ),
-                        backgroundColor: AppTheme.lightBlueBg,
-                        side: const BorderSide(color: AppTheme.primaryBlue, width: 0.6),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => context.read<SimulationController>().fastForward(count),
                       ),
                     );
                   }),
@@ -202,7 +198,7 @@ class _MonitorPlaybackBar extends StatelessWidget {
   }
 }
 
-/// Kartu Cepat Posisi & Kecepatan Pengguna
+/// Kartu Cepat Posisi & Kecepatan Pengguna (Monokrom Modern)
 class _MobilityPositionQuickCard extends StatelessWidget {
   const _MobilityPositionQuickCard();
 
@@ -219,21 +215,41 @@ class _MobilityPositionQuickCard extends StatelessWidget {
     );
 
     return Card(
-      elevation: 1,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.directions_walk, color: AppTheme.primaryBlue, size: 18),
-                SizedBox(width: 8),
-                Expanded(
+                const Icon(Icons.near_me_outlined, color: AppTheme.textPrimary, size: 16),
+                const SizedBox(width: 8),
+                const Expanded(
                   child: Text(
                     'Posisi & Mobilitas Pengguna',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceBackground,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppTheme.dividerColor),
+                  ),
+                  child: Text(
+                    isMoving ? 'MOVING' : 'PAUSED',
+                    style: const TextStyle(
+                      fontSize: 9,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),
@@ -241,16 +257,16 @@ class _MobilityPositionQuickCard extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 20),
+            const Divider(height: 18),
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Koordinat (X, Y)', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(pos, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                      const Text('Koordinat (X, Y)', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                      const SizedBox(height: 2),
+                      Text(pos, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                     ],
                   ),
                 ),
@@ -258,25 +274,10 @@ class _MobilityPositionQuickCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Kecepatan Efektif', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(speed, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                      const Text('Kecepatan Efektif', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                      const SizedBox(height: 2),
+                      Text(speed, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                     ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isMoving ? AppTheme.lightGreenBg : AppTheme.lightOrangeBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    isMoving ? 'MOVING' : 'PAUSED',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isMoving ? AppTheme.successGreen : AppTheme.warningOrange,
-                    ),
                   ),
                 ),
               ],
@@ -288,7 +289,7 @@ class _MobilityPositionQuickCard extends StatelessWidget {
   }
 }
 
-/// Placeholder Banner Keputusan Handover Live (Akan diisi detail di Step 3)
+/// Banner Keputusan Handover Live (High-Contrast Monochrome Banner)
 class _LiveDecisionBannerPlaceholder extends StatelessWidget {
   const _LiveDecisionBannerPlaceholder();
 
@@ -300,108 +301,142 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
     final targetId = context.select<SimulationController, String?>((c) => c.recommendedTargetId);
     final qos = context.select<SimulationController, double?>((c) => c.latestDecision?.qosFactor);
     final hf = context.select<SimulationController, double?>((c) => c.latestDecision?.handoverFactor);
+    final threshold = context.select<SimulationController, double?>((c) => c.latestDecision?.threshold) ?? 0.45;
 
-    final Color bannerBg = isUnavailable
-        ? AppTheme.lightRedBg
-        : (isRecommended ? AppTheme.lightGreenBg : Colors.white);
-
-    final Color borderColor = isUnavailable
-        ? AppTheme.errorRed
-        : (isRecommended ? AppTheme.successGreen : AppTheme.dividerColor);
-
-    final Color tagColor = isUnavailable
-        ? AppTheme.errorRed
-        : (isRecommended ? AppTheme.successGreen : AppTheme.textSecondary);
+    final isAlert = isUnavailable || isRecommended;
 
     final String tagText = isUnavailable
-        ? 'KONEKSI TERPUTUS (OUT OF RANGE)'
-        : (isRecommended ? 'REKOMENDASI HANDOVER (OPTIMAL)' : 'KEPUTUSAN SAAT INI (ADVISORY)');
+        ? 'KONEKSI TERPUTUS'
+        : (isRecommended ? 'REKOMENDASI HANDOVER' : 'KEPUTUSAN SAAT INI (ADVISORY)');
 
     final String mainTitle = isUnavailable
-        ? (targetId != null ? 'TERPUTUS → PINDAH KE $targetId' : 'KONEKSI HILANG: $activeId')
-        : (isRecommended ? 'HANDOVER → $targetId' : 'STAY DI JARINGAN $activeId');
-
-    final threshold = context.select<SimulationController, double?>((c) => c.latestDecision?.threshold) ?? 0.70;
+        ? (targetId != null ? 'Terputus ➔ Rekomendasi: $targetId' : 'Koneksi Hilang: $activeId')
+        : (isRecommended ? 'Pindah ke $targetId' : 'Koneksi Stabil: $activeId');
 
     final String subText = isUnavailable
-        ? 'Jaringan aktif $activeId tidak terjangkau. Disarankan beralih ke jaringan alternatif.'
+        ? 'Jaringan aktif $activeId tidak terjangkau. Disarankan segera beralih ke jaringan cadangan.'
         : (isRecommended
-            ? 'HF (${hf?.toStringAsFixed(2)}) > Ambang (${threshold.toStringAsFixed(2)}) · Kualitas kanal menurun, target terseleksi.'
-            : 'QoS: ${qos != null ? qos.toStringAsFixed(2) : '-'} · HF: ${hf != null ? hf.toStringAsFixed(2) : '-'} (Ambang: ${threshold.toStringAsFixed(2)}) · Sinyal & QoS mencukupi.');
+            ? 'HF (${hf?.toStringAsFixed(2)}) > Ambang (${threshold.toStringAsFixed(2)}) · Algoritma merekomendasikan target terbaik.'
+            : 'QoS: ${qos != null ? qos.toStringAsFixed(2) : '-'} · HF: ${hf != null ? hf.toStringAsFixed(2) : '-'} (Ambang: ${threshold.toStringAsFixed(2)}) · Sinyal mencukupi.');
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: bannerBg,
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(
-          color: borderColor,
-          width: (isUnavailable || isRecommended) ? 1.5 : 0.8,
+    if (isAlert) {
+      return Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBlack,
+          borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+          border: Border.all(color: AppTheme.darkBorder, width: 1.0),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                tagText,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: tagColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    tagText,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
+                if (targetId != null)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.darkNavy,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: () => context.read<SimulationController>().acceptHandover(),
+                    child: Text(
+                      isUnavailable ? 'Beralih ke $targetId' : 'Terima Handover',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              mainTitle,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: -0.3,
               ),
-              if (isRecommended && targetId != null)
-                ElevatedButton.icon(
-                  icon: Icon(isUnavailable ? Icons.warning_amber : Icons.check, size: 16),
-                  label: Text(
-                    isUnavailable ? 'Beralih ke $targetId' : 'Terima Handover',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isUnavailable ? AppTheme.errorRed : AppTheme.successGreen,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                  onPressed: () => context.read<SimulationController>().acceptHandover(),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            mainTitle,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isUnavailable
-                  ? AppTheme.errorRed
-                  : (isRecommended ? AppTheme.successGreen : AppTheme.textPrimary),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subText,
-            style: TextStyle(
-              fontSize: 12,
-              color: isUnavailable ? AppTheme.errorRed : AppTheme.textSecondary,
+            const SizedBox(height: 4),
+            Text(
+              subText,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.white.withValues(alpha: 0.75),
+                height: 1.3,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tagText,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              mainTitle,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subText,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppTheme.textSecondary,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Section Kartu Jaringan 4G, 5G, Wi-Fi dengan status sinyal live & indikator jaringan aktif
+/// Section Kartu Jaringan (4G, 5G, Wi-Fi) Monokrom Modern
 class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
   const _LiveNetworkCardsSectionPlaceholder();
 
@@ -416,44 +451,51 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
         const Text(
           'Kondisi Sinyal Kanal (4G, 5G, WLAN)',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         ...snapshots.map(
           (s) {
             final isActive = s.id == activeId;
             return Card(
+              elevation: 0,
               margin: const EdgeInsets.only(bottom: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
                 side: BorderSide(
-                  color: isActive ? AppTheme.primaryBlue : AppTheme.dividerColor,
-                  width: isActive ? 2.0 : 0.8,
+                  color: isActive ? AppTheme.darkNavy : AppTheme.dividerColor,
+                  width: isActive ? 1.5 : 1.0,
                 ),
               ),
               child: ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 leading: Icon(
                   s.technology == NetworkTechnology.nr
-                      ? Icons.five_g
-                      : (s.technology == NetworkTechnology.lte ? Icons.four_g_mobiledata : Icons.wifi),
-                  color: s.available ? AppTheme.primaryBlue : AppTheme.errorRed,
-                  size: 28,
+                      ? Icons.five_g_outlined
+                      : (s.technology == NetworkTechnology.lte ? Icons.cell_tower : Icons.wifi),
+                  color: s.available ? AppTheme.textPrimary : AppTheme.textTertiary,
+                  size: 24,
                 ),
                 title: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '${s.id} (${s.technology.name.toUpperCase()})',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    Flexible(
+                      child: Text(
+                        '${s.id} (${s.technology.name.toUpperCase()})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     if (isActive)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.darkNavy,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
@@ -465,31 +507,38 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                 ),
                 subtitle: Text(
                   'RSS: ${s.rssDbm.toStringAsFixed(1)} dBm · Rate: ${s.dataRateMbps.toStringAsFixed(1)} Mbps · Delay: ${s.delayMs.toStringAsFixed(1)} ms',
-                  style: const TextStyle(fontSize: 11),
+                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: s.available ? AppTheme.lightGreenBg : AppTheme.lightRedBg,
-                        borderRadius: BorderRadius.circular(8),
+                        color: s.available ? AppTheme.surfaceBackground : const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: s.available ? AppTheme.dividerColor : const Color(0xFFFECACA),
+                        ),
                       ),
                       child: Text(
                         s.available ? 'IN RANGE' : 'OUT',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: s.available ? AppTheme.successGreen : AppTheme.errorRed,
+                          color: s.available ? AppTheme.textPrimary : AppTheme.errorRed,
                         ),
                       ),
                     ),
                     if (!isActive && s.available) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       IconButton(
                         icon: const Icon(Icons.link, size: 18),
                         tooltip: 'Pilih sebagai jaringan aktif',
+                        color: AppTheme.textPrimary,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(),
                         onPressed: () => context.read<SimulationController>().switchActiveNetwork(s.id),
                       ),
                     ],

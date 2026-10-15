@@ -5,12 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 
-/// Screen 2 — Home Dashboard sesuai PRD v1.0/v2.0
-///
-/// Berisi:
-/// - Status Card (status aktif simulasi & jaringan)
-/// - Alur Simulator (5 langkah proses keputusan)
-/// - Menu Utama Grid (6 kartu aksi cepat)
+/// Screen 2 — Home Dashboard (Minimalist Black & White)
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -19,14 +14,14 @@ class HomeScreen extends StatelessWidget {
     return const Scaffold(
       body: SingleChildScrollView(
         key: PageStorageKey('home_scroll_key'),
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SimulationStatusHeroCard(),
-            SizedBox(height: 20),
+            SizedBox(height: 22),
             _SimulatorWorkflowSection(),
-            SizedBox(height: 20),
+            SizedBox(height: 22),
             _MainMenuGridSection(),
             SizedBox(height: 24),
           ],
@@ -36,7 +31,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// Kartu Hero Status Terakhir (Status Card PRD Section 1)
+/// Kartu Hero Status Terakhir (Desain Monokrom Modern)
 class _SimulationStatusHeroCard extends StatelessWidget {
   const _SimulationStatusHeroCard();
 
@@ -51,23 +46,11 @@ class _SimulationStatusHeroCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isUnavailable
-              ? [const Color(0xFF8B0000), AppTheme.errorRed]
-              : [AppTheme.deepNavy, AppTheme.primaryBlue],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppTheme.cardBlack,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.deepNavy.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppTheme.darkBorder, width: 1.0),
       ),
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(18.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -75,19 +58,19 @@ class _SimulationStatusHeroCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
-                        color: isRunning ? const Color(0xFF69F0AE) : Colors.orangeAccent,
+                        color: isRunning ? const Color(0xFF4ADE80) : const Color(0xFFFBBF24),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -95,10 +78,10 @@ class _SimulationStatusHeroCard extends StatelessWidget {
                     Text(
                       isRunning ? 'SIMULASI AKTIF' : 'TERJEDA / STANDBY',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.4,
                       ),
                     ),
                   ],
@@ -108,7 +91,7 @@ class _SimulationStatusHeroCard extends StatelessWidget {
                 'Langkah $stepIndex',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -120,31 +103,34 @@ class _SimulationStatusHeroCard extends StatelessWidget {
                 ? 'Koneksi Terputus: $activeNetworkId'
                 : (isRecommended ? 'Rekomendasi: Pindah ke $targetId' : 'Koneksi Stabil: $activeNetworkId'),
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Colors.white,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             isUnavailable
-                ? 'Sinyal $activeNetworkId hilang (out of range). Beralih ke jaringan alternatif.'
+                ? 'Sinyal $activeNetworkId terputus. Sistem menyiapkan perpindahan darurat.'
                 : (isRecommended
-                    ? 'Sistem Fuzzy-TOPSIS mendeteksi kandidat dengan kualitas lebih optimal.'
-                    : 'Jaringan aktif masih mencukupi kebutuhan kelas trafik saat ini.'),
+                    ? 'Algoritma mendeteksi alternatif dengan performa lebih optimal.'
+                    : 'Kanal memenuhi kebutuhan QoS profil aplikasi saat ini.'),
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.85),
-              height: 1.3,
+              color: Colors.white.withValues(alpha: 0.75),
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ElevatedButton.icon(
                 icon: Icon(
                   isRunning ? Icons.pause : Icons.play_arrow,
-                  size: 18,
+                  size: 16,
                   color: AppTheme.darkNavy,
                 ),
                 label: Text(
@@ -152,11 +138,14 @@ class _SimulationStatusHeroCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.darkNavy,
+                    fontSize: 12,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: () {
                   final controller = context.read<SimulationController>();
@@ -167,35 +156,31 @@ class _SimulationStatusHeroCard extends StatelessWidget {
                   }
                 },
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
-                icon: const Icon(Icons.fast_forward, size: 16, color: Colors.white),
+                icon: const Icon(Icons.fast_forward, size: 14, color: Colors.white),
                 label: const Text(
                   '+100s',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white70),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
-                  ),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: () => context.read<SimulationController>().fastForward(100),
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
-                icon: const Icon(Icons.speed, size: 16, color: Colors.white),
+                icon: const Icon(Icons.speed, size: 14, color: Colors.white),
                 label: const Text(
                   'Monitor',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white70),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.buttonBorderRadius),
-                  ),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: () => context.go('/monitor'),
               ),
@@ -207,7 +192,7 @@ class _SimulationStatusHeroCard extends StatelessWidget {
   }
 }
 
-/// Alur Simulator 5 Langkah (PRD Section 2)
+/// Alur Simulator 5 Langkah (Desain Monokrom Bersih dengan Padding Presisi)
 class _SimulatorWorkflowSection extends StatelessWidget {
   const _SimulatorWorkflowSection();
 
@@ -216,75 +201,55 @@ class _SimulatorWorkflowSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryBlue,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Alur Simulator Vertical Handover',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ],
+        const Text(
+          'Alur Simulator Vertical Handover',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.2,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: 12),
-        const SingleChildScrollView(
+        const SizedBox(height: 10),
+        SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(right: 16.0),
           child: Row(
-            children: [
+            children: const [
               _WorkflowStepCard(
-                stepNumber: '1',
+                stepNumber: '01',
                 title: 'Generator',
                 subtitle: 'Mobilitas & RF',
                 icon: Icons.cell_tower,
-                color: Color(0xFFE3F2FD),
-                accentColor: AppTheme.primaryBlue,
               ),
               _WorkflowArrow(),
               _WorkflowStepCard(
-                stepNumber: '2',
+                stepNumber: '02',
                 title: 'QoS Factor',
                 subtitle: 'Rate, Delay, BER',
-                icon: Icons.calculate,
-                color: Color(0xFFE8F5E9),
-                accentColor: AppTheme.successGreen,
+                icon: Icons.calculate_outlined,
               ),
               _WorkflowArrow(),
               _WorkflowStepCard(
-                stepNumber: '3',
+                stepNumber: '03',
                 title: 'Fuzzy FIS',
                 subtitle: 'HF > Threshold',
-                icon: Icons.psychology,
-                color: Color(0xFFFFF3E0),
-                accentColor: AppTheme.warningOrange,
+                icon: Icons.psychology_outlined,
               ),
               _WorkflowArrow(),
               _WorkflowStepCard(
-                stepNumber: '4',
+                stepNumber: '04',
                 title: 'TOPSIS',
                 subtitle: 'Seleksi Terbaik',
-                icon: Icons.leaderboard,
-                color: Color(0xFFF3E5F5),
-                accentColor: Color(0xFF7B1FA2),
+                icon: Icons.sort_outlined,
               ),
               _WorkflowArrow(),
               _WorkflowStepCard(
-                stepNumber: '5',
+                stepNumber: '05',
                 title: 'Stabilizer',
                 subtitle: 'Anti Ping-Pong',
-                icon: Icons.verified_user,
-                color: Color(0xFFE0F2F1),
-                accentColor: Color(0xFF00796B),
+                icon: Icons.shield_outlined,
               ),
             ],
           ),
@@ -299,38 +264,48 @@ class _WorkflowStepCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color color;
-  final Color accentColor;
 
   const _WorkflowStepCard({
     required this.stepNumber,
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.color,
-    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
+      width: 96,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.dividerColor, width: 1.0),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: accentColor, size: 22),
-          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                stepNumber,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textTertiary,
+                ),
+              ),
+              Icon(icon, color: AppTheme.textPrimary, size: 16),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
+            style: const TextStyle(
+              fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: accentColor,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -340,6 +315,7 @@ class _WorkflowStepCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 9,
               color: AppTheme.textSecondary,
+              height: 1.2,
             ),
           ),
         ],
@@ -355,12 +331,12 @@ class _WorkflowArrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 4.0),
-      child: Icon(Icons.arrow_forward_ios, size: 12, color: AppTheme.textTertiary),
+      child: Icon(Icons.chevron_right, size: 16, color: AppTheme.textTertiary),
     );
   }
 }
 
-/// Menu Utama Grid (PRD Section 3)
+/// Menu Utama Grid (Desain Monokrom Bersih, Tanpa Lingkaran Warna-Warni)
 class _MainMenuGridSection extends StatelessWidget {
   const _MainMenuGridSection();
 
@@ -369,76 +345,58 @@ class _MainMenuGridSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryBlue,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Menu Utama',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ],
+        const Text(
+          'Menu Utama',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.2,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.35,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.32,
           children: [
             _MenuActionCard(
               title: 'Monitor Simulasi',
               subtitle: 'Cockpit RF & keputusan live',
               icon: Icons.sensors,
-              color: AppTheme.primaryBlue,
               onTap: () => context.go('/monitor'),
             ),
             _MenuActionCard(
               title: 'Konfigurasi',
               subtitle: 'Ambang Fuzzy & bobot TOPSIS',
               icon: Icons.tune,
-              color: AppTheme.warningOrange,
               onTap: () => context.go('/settings'),
             ),
             _MenuActionCard(
               title: 'Hasil Evaluasi',
               subtitle: 'Metrik handover & performa',
-              icon: Icons.analytics,
-              color: const Color(0xFF7B1FA2),
+              icon: Icons.analytics_outlined,
               onTap: () => context.go('/results'),
             ),
             _MenuActionCard(
               title: 'Log Keputusan',
               subtitle: 'Audit trail keputusan lengkap',
-              icon: Icons.receipt_long,
-              color: AppTheme.successGreen,
+              icon: Icons.list_alt,
               onTap: () => context.push('/logs'),
             ),
             _MenuActionCard(
               title: 'Lompat Simulasi',
               subtitle: 'Pilih +10s, +50s, +100s, +500s',
-              icon: Icons.fast_forward,
-              color: const Color(0xFF00796B),
+              icon: Icons.fast_forward_outlined,
               onTap: () => _showJumpSheet(context),
             ),
             _MenuActionCard(
               title: 'Reset Skenario',
               subtitle: 'Mulai ulang dari awal',
               icon: Icons.restart_alt,
-              color: AppTheme.errorRed,
               onTap: () => context.read<SimulationController>().reset(),
             ),
           ],
@@ -452,7 +410,7 @@ class _MainMenuGridSection extends StatelessWidget {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
         return Padding(
@@ -461,46 +419,41 @@ class _MainMenuGridSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.fast_forward, color: AppTheme.primaryBlue),
-                  SizedBox(width: 8),
-                  Text(
-                    'Lompat Simulasi Cepat',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-                  ),
-                ],
+              const Text(
+                'Lompat Simulasi Cepat',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               const Text(
                 'Pilih durasi lompatan untuk memajukan skenario mobilitas secara instan:',
                 style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
               const SizedBox(height: 16),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   for (final sec in [1, 10, 50, 100, 250, 500])
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.flash_on, size: 16),
-                      label: Text('+$sec Detik'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.lightBlueBg,
-                        foregroundColor: AppTheme.primaryBlue,
-                        elevation: 0,
-                        side: const BorderSide(color: AppTheme.primaryBlue, width: 0.8),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        side: const BorderSide(color: AppTheme.dividerColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       onPressed: () {
                         Navigator.pop(ctx);
                         context.read<SimulationController>().fastForward(sec);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Simulasi melompat maju $sec langkah.'),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
                       },
+                      child: Text(
+                        '+$sec Detik',
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -517,45 +470,40 @@ class _MenuActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color color;
   final VoidCallback onTap;
 
   const _MenuActionCard({
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
+              Icon(icon, color: AppTheme.textPrimary, size: 22),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
                     ),

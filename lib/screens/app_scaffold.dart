@@ -5,8 +5,9 @@ import 'package:provider/provider.dart';
 import '../core/simulation/simulation.dart';
 import '../theme/app_theme.dart';
 
-/// Shell utama aplikasi yang membungkus seluruh navigasi tab persisten
-/// sesuai PRD v1.0/v2.0.
+/// Shell utama aplikasi yang membungkus seluruh navigasi tab dalam
+/// kontainer mobile viewport terpusat (Centered Mobile Viewport, maxWidth: 440px)
+/// agar tampilan di desktop Linux maupun mobile konsisten sempurna.
 class AppScaffold extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -18,64 +19,95 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('WMC Simulator', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(
-              'Vertical Handover Decision System',
-              style: TextStyle(fontSize: 11, color: AppTheme.accentBlue, fontWeight: FontWeight.normal),
-            ),
-          ],
-        ),
-        actions: const [
-          _LiveStatusBadge(),
-          SizedBox(width: 12),
-        ],
-      ),
+      backgroundColor: AppTheme.desktopCanvas,
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: navigationShell,
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppTheme.dividerColor, width: 0.8),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 440),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceBackground,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 32,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ),
-        child: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) {
-            navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            );
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Beranda',
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'WMC Simulator',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.3,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Vertical Handover Decision System',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+              bottom: const PreferredSize(
+                preferredSize: Size.fromHeight(1),
+                child: Divider(height: 1, color: AppTheme.dividerColor),
+              ),
+              actions: const [
+                _LiveStatusBadge(),
+                SizedBox(width: 14),
+              ],
             ),
-            NavigationDestination(
-              icon: Icon(Icons.sensors_outlined),
-              selectedIcon: Icon(Icons.sensors),
-              label: 'Simulasi',
+            body: navigationShell,
+            bottomNavigationBar: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: AppTheme.dividerColor, width: 1.0),
+                ),
+              ),
+              child: NavigationBar(
+                selectedIndex: navigationShell.currentIndex,
+                height: 64,
+                onDestinationSelected: (index) {
+                  navigationShell.goBranch(
+                    index,
+                    initialLocation: index == navigationShell.currentIndex,
+                  );
+                },
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home),
+                    label: 'Beranda',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.sensors_outlined),
+                    selectedIcon: Icon(Icons.sensors),
+                    label: 'Simulasi',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.analytics_outlined),
+                    selectedIcon: Icon(Icons.analytics),
+                    label: 'Hasil',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.tune_outlined),
+                    selectedIcon: Icon(Icons.tune),
+                    label: 'Pengaturan',
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.analytics_outlined),
-              selectedIcon: Icon(Icons.analytics),
-              label: 'Hasil',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.tune_outlined),
-              selectedIcon: Icon(Icons.tune),
-              label: 'Pengaturan',
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -92,31 +124,31 @@ class _LiveStatusBadge extends StatelessWidget {
 
     return RepaintBoundary(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        margin: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white24, width: 0.8),
+          color: AppTheme.surfaceBackground,
+          borderRadius: BorderRadius.circular(AppTheme.chipBorderRadius),
+          border: Border.all(color: AppTheme.dividerColor, width: 1.0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 7,
-              height: 7,
+              width: 6,
+              height: 6,
               decoration: BoxDecoration(
-                color: isRunning ? const Color(0xFF69F0AE) : Colors.orangeAccent,
+                color: isRunning ? AppTheme.successGreen : AppTheme.textTertiary,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 6),
-            const Text(
-              'SYNTHETIC RF',
-              style: TextStyle(
-                fontSize: 10,
+            Text(
+              isRunning ? 'LIVE' : 'STANDBY',
+              style: const TextStyle(
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: AppTheme.textPrimary,
                 letterSpacing: 0.5,
               ),
             ),
