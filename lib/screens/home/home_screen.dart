@@ -192,146 +192,209 @@ class _SimulationStatusHeroCard extends StatelessWidget {
   }
 }
 
-/// Alur Simulator 5 Langkah (Desain Monokrom Bersih dengan Padding Presisi)
+/// Alur Simulator 5 Tahap (Pipeline Vertikal Modern Bebas Cutoff)
 class _SimulatorWorkflowSection extends StatelessWidget {
   const _SimulatorWorkflowSection();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Alur Simulator Vertical Handover',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.2,
-            color: context.textPrimaryColor,
-          ),
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: BorderSide(color: context.borderColor, width: 1.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.account_tree_outlined,
+                        size: 16,
+                        color: context.textPrimaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Alur Simulator Vertical Handover',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: context.isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: context.borderColor),
+                  ),
+                  child: Text(
+                    '5 TAHAP',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: context.textSecondaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Pipeline pengambilan keputusan algoritma Ndegwa et al. (2023):',
+              style: TextStyle(fontSize: 11, color: context.textSecondaryColor),
+            ),
+            const SizedBox(height: 14),
+            const _PipelineStepItem(
+              stepNumber: '01',
+              title: 'Generator Mobilitas & RF',
+              subtitle: 'Simulasi mobilitas RWP & Path Loss kanal 4G/5G/Wi-Fi',
+              icon: Icons.cell_tower,
+              isLast: false,
+            ),
+            const _PipelineStepItem(
+              stepNumber: '02',
+              title: 'Normalisasi QoS Factor',
+              subtitle: 'Evaluasi Throughput, Latensi/Delay, dan Packet Loss/BER',
+              icon: Icons.calculate_outlined,
+              isLast: false,
+            ),
+            const _PipelineStepItem(
+              stepNumber: '03',
+              title: 'Fuzzy Mamdani (Inisiasi)',
+              subtitle: 'Evaluasi Handover Factor (HF) terhadap ambang batas dinamis',
+              icon: Icons.psychology_outlined,
+              isLast: false,
+            ),
+            const _PipelineStepItem(
+              stepNumber: '04',
+              title: 'TOPSIS (Seleksi Target)',
+              subtitle: 'Perangkingan kandidat terbaik dengan matriks bobot AHP',
+              icon: Icons.sort_outlined,
+              isLast: false,
+            ),
+            const _PipelineStepItem(
+              stepNumber: '05',
+              title: 'Stabilizer (Anti Ping-Pong)',
+              subtitle: 'Dwell time 3.0 detik & hysteresis gain minimum >= 0.05',
+              icon: Icons.shield_outlined,
+              isLast: true,
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(right: 16.0),
-          child: Row(
-            children: const [
-              _WorkflowStepCard(
-                stepNumber: '01',
-                title: 'Generator',
-                subtitle: 'Mobilitas & RF',
-                icon: Icons.cell_tower,
-              ),
-              _WorkflowArrow(),
-              _WorkflowStepCard(
-                stepNumber: '02',
-                title: 'QoS Factor',
-                subtitle: 'Rate, Delay, BER',
-                icon: Icons.calculate_outlined,
-              ),
-              _WorkflowArrow(),
-              _WorkflowStepCard(
-                stepNumber: '03',
-                title: 'Fuzzy FIS',
-                subtitle: 'HF > Threshold',
-                icon: Icons.psychology_outlined,
-              ),
-              _WorkflowArrow(),
-              _WorkflowStepCard(
-                stepNumber: '04',
-                title: 'TOPSIS',
-                subtitle: 'Seleksi Terbaik',
-                icon: Icons.sort_outlined,
-              ),
-              _WorkflowArrow(),
-              _WorkflowStepCard(
-                stepNumber: '05',
-                title: 'Stabilizer',
-                subtitle: 'Anti Ping-Pong',
-                icon: Icons.shield_outlined,
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _WorkflowStepCard extends StatelessWidget {
+class _PipelineStepItem extends StatelessWidget {
   final String stepNumber;
   final String title;
   final String subtitle;
   final IconData icon;
+  final bool isLast;
 
-  const _WorkflowStepCard({
+  const _PipelineStepItem({
     required this.stepNumber,
     required this.title,
     required this.subtitle,
     required this.icon,
+    required this.isLast,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 96,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.borderColor, width: 1.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Left track: badge number + vertical connecting line
+          Column(
             children: [
-              Text(
-                stepNumber,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: context.textTertiaryColor,
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: context.isDark ? const Color(0xFF262626) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: context.borderColor),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  stepNumber,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimaryColor,
+                  ),
                 ),
               ),
-              Icon(icon, color: context.textPrimaryColor, size: 16),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 1.5,
+                    color: context.borderColor,
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: context.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 9,
-              color: context.textSecondaryColor,
-              height: 1.2,
+          const SizedBox(width: 12),
+          // Right content: title, subtitle, icon
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 12.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.textSecondaryColor,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(icon, size: 16, color: context.textSecondaryColor),
+                ],
+              ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _WorkflowArrow extends StatelessWidget {
-  const _WorkflowArrow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Icon(Icons.chevron_right, size: 16, color: context.textTertiaryColor),
     );
   }
 }

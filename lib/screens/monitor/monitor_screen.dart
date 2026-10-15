@@ -120,27 +120,28 @@ class _PlaybackControlsCard extends StatelessWidget {
               ],
             ),
             Divider(height: 18, color: context.borderColor),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  Text(
-                    'Speed: ',
+            Row(
+              children: [
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    'Speed:',
                     style: TextStyle(fontSize: 11, color: context.textSecondaryColor, fontWeight: FontWeight.bold),
                   ),
-                  ...[1, 2, 5, 10, 20].map((s) {
-                    final isSelected = currentSpeed == s;
-                    final activeBg = isDark ? Colors.white : AppTheme.darkNavy;
-                    final activeFg = isDark ? AppTheme.pureBlack : Colors.white;
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [1, 2, 5, 10, 20].map((s) {
+                      final isSelected = currentSpeed == s;
+                      final activeBg = isDark ? Colors.white : AppTheme.darkNavy;
+                      final activeFg = isDark ? AppTheme.pureBlack : Colors.white;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 4.0),
-                      child: InkWell(
+                      return InkWell(
                         onTap: () => context.read<SimulationController>().setPlaybackSpeed(s),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: isSelected ? activeBg : context.cardColor,
                             borderRadius: BorderRadius.circular(6),
@@ -157,24 +158,31 @@ class _PlaybackControlsCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                  const SizedBox(width: 8),
-                  Container(width: 1, height: 14, color: context.borderColor),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Lompat: ',
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    'Lompat:',
                     style: TextStyle(fontSize: 11, color: context.textSecondaryColor, fontWeight: FontWeight.bold),
                   ),
-                  ...[10, 50, 100, 500].map((count) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 5.0),
-                      child: InkWell(
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [10, 50, 100, 500].map((count) {
+                      return InkWell(
                         onTap: () => context.read<SimulationController>().fastForward(count),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF1F1F1F) : AppTheme.surfaceBackground,
                             borderRadius: BorderRadius.circular(6),
@@ -189,11 +197,11 @@ class _PlaybackControlsCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
