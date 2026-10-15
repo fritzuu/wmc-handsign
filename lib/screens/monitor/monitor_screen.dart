@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 
-/// Screen 6 — Live Monitor Cockpit Shell (Minimalist Black & White)
+/// Screen 6 — Cockpit Monitor Simulasi (Real-Time Playback & Sinyal RF Monokrom)
 class MonitorScreen extends StatelessWidget {
   const MonitorScreen({super.key});
 
@@ -17,7 +17,7 @@ class MonitorScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _MonitorPlaybackBar(),
+            _PlaybackControlsCard(),
             SizedBox(height: 14),
             _MobilityPositionQuickCard(),
             SizedBox(height: 14),
@@ -32,9 +32,9 @@ class MonitorScreen extends StatelessWidget {
   }
 }
 
-/// Bar Kontrol Playback & Kemajuan Simulasi (Monokrom Modern)
-class _MonitorPlaybackBar extends StatelessWidget {
-  const _MonitorPlaybackBar();
+/// Card Kontrol Playback (Step, Play/Pause, Reset, Speed, Lompatan)
+class _PlaybackControlsCard extends StatelessWidget {
+  const _PlaybackControlsCard();
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +42,13 @@ class _MonitorPlaybackBar extends StatelessWidget {
     final elapsedSeconds = context.select<SimulationController, double>((c) => c.elapsedSeconds);
     final isRunning = context.select<SimulationController, bool>((c) => c.isRunning);
     final currentSpeed = context.select<SimulationController, int>((c) => c.playbackSpeed);
+    final isDark = context.isDark;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+        side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
@@ -57,7 +58,7 @@ class _MonitorPlaybackBar extends StatelessWidget {
               children: [
                 Icon(
                   isRunning ? Icons.play_arrow : Icons.pause,
-                  color: AppTheme.textPrimary,
+                  color: context.textPrimaryColor,
                   size: 22,
                 ),
                 const SizedBox(width: 10),
@@ -67,10 +68,10 @@ class _MonitorPlaybackBar extends StatelessWidget {
                     children: [
                       Text(
                         'Langkah $stepIndex · ${elapsedSeconds.toStringAsFixed(1)}s',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                          color: context.textPrimaryColor,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -78,9 +79,9 @@ class _MonitorPlaybackBar extends StatelessWidget {
                         isRunning
                             ? 'Berjalan (${currentSpeed}x kecepatan)'
                             : 'Simulasi dijeda',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: context.textSecondaryColor,
                         ),
                       ),
                     ],
@@ -92,13 +93,13 @@ class _MonitorPlaybackBar extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.skip_next, size: 20),
                       tooltip: 'Maju 1s',
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                       onPressed: () => context.read<SimulationController>().step(1.0),
                     ),
                     IconButton(
                       icon: Icon(isRunning ? Icons.pause : Icons.play_arrow, size: 20),
                       tooltip: isRunning ? 'Jeda' : 'Jalankan',
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                       onPressed: () {
                         final c = context.read<SimulationController>();
                         if (c.isRunning) {
@@ -111,25 +112,28 @@ class _MonitorPlaybackBar extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.restart_alt, size: 19),
                       tooltip: 'Reset',
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondaryColor,
                       onPressed: () => context.read<SimulationController>().reset(),
                     ),
                   ],
                 ),
               ],
             ),
-            const Divider(height: 18),
+            Divider(height: 18, color: context.borderColor),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Speed: ',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 11, color: context.textSecondaryColor, fontWeight: FontWeight.bold),
                   ),
                   ...[1, 2, 5, 10, 20].map((s) {
                     final isSelected = currentSpeed == s;
+                    final activeBg = isDark ? Colors.white : AppTheme.darkNavy;
+                    final activeFg = isDark ? AppTheme.pureBlack : Colors.white;
+
                     return Padding(
                       padding: const EdgeInsets.only(right: 4.0),
                       child: InkWell(
@@ -138,10 +142,10 @@ class _MonitorPlaybackBar extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.darkNavy : Colors.white,
+                            color: isSelected ? activeBg : context.cardColor,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isSelected ? AppTheme.darkNavy : AppTheme.dividerColor,
+                              color: isSelected ? activeBg : context.borderColor,
                             ),
                           ),
                           child: Text(
@@ -149,7 +153,7 @@ class _MonitorPlaybackBar extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? Colors.white : AppTheme.textPrimary,
+                              color: isSelected ? activeFg : context.textPrimaryColor,
                             ),
                           ),
                         ),
@@ -157,11 +161,11 @@ class _MonitorPlaybackBar extends StatelessWidget {
                     );
                   }),
                   const SizedBox(width: 8),
-                  Container(width: 1, height: 14, color: AppTheme.dividerColor),
+                  Container(width: 1, height: 14, color: context.borderColor),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Lompat: ',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 11, color: context.textSecondaryColor, fontWeight: FontWeight.bold),
                   ),
                   ...[10, 50, 100, 500].map((count) {
                     return Padding(
@@ -172,16 +176,16 @@ class _MonitorPlaybackBar extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceBackground,
+                            color: isDark ? const Color(0xFF1F1F1F) : AppTheme.surfaceBackground,
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppTheme.dividerColor),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Text(
                             '+${count}s',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
+                              color: context.textPrimaryColor,
                             ),
                           ),
                         ),
@@ -213,12 +217,13 @@ class _MobilityPositionQuickCard extends StatelessWidget {
     final isMoving = context.select<SimulationController, bool>(
       (c) => c.mobilityState.isMoving,
     );
+    final isDark = context.isDark;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+        side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
@@ -227,46 +232,46 @@ class _MobilityPositionQuickCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.near_me_outlined, color: AppTheme.textPrimary, size: 16),
+                Icon(Icons.near_me_outlined, color: context.textPrimaryColor, size: 16),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Posisi & Mobilitas Pengguna',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceBackground,
+                    color: isDark ? const Color(0xFF1F1F1F) : AppTheme.surfaceBackground,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.dividerColor),
+                    border: Border.all(color: context.borderColor),
                   ),
                   child: Text(
                     isMoving ? 'MOVING' : 'PAUSED',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                 ),
               ],
             ),
-            const Divider(height: 18),
+            Divider(height: 18, color: context.borderColor),
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Koordinat (X, Y)', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                      Text('Koordinat (X, Y)', style: TextStyle(fontSize: 10, color: context.textSecondaryColor)),
                       const SizedBox(height: 2),
-                      Text(pos, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                      Text(pos, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimaryColor)),
                     ],
                   ),
                 ),
@@ -274,9 +279,9 @@ class _MobilityPositionQuickCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Kecepatan Efektif', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                      Text('Kecepatan Efektif', style: TextStyle(fontSize: 10, color: context.textSecondaryColor)),
                       const SizedBox(height: 2),
-                      Text(speed, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                      Text(speed, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimaryColor)),
                     ],
                   ),
                 ),
@@ -304,6 +309,7 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
     final threshold = context.select<SimulationController, double?>((c) => c.latestDecision?.threshold) ?? 0.45;
 
     final isAlert = isUnavailable || isRecommended;
+    final isDark = context.isDark;
 
     final String tagText = isUnavailable
         ? 'KONEKSI TERPUTUS'
@@ -323,9 +329,9 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: AppTheme.cardBlack,
+          color: isDark ? const Color(0xFF1A1A1A) : AppTheme.darkNavy,
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          border: Border.all(color: AppTheme.darkBorder, width: 1.0),
+          border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.darkBorder, width: 1.0),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,7 +400,7 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+        side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -403,29 +409,29 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
           children: [
             Text(
               tagText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
-                color: AppTheme.textSecondary,
+                color: context.textSecondaryColor,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               mainTitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: context.textPrimaryColor,
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
-                color: AppTheme.textSecondary,
+                color: context.textSecondaryColor,
                 height: 1.3,
               ),
             ),
@@ -444,29 +450,34 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final snapshots = context.select<SimulationController, List<NetworkSnapshot>>((c) => c.snapshots);
     final activeId = context.select<SimulationController, String>((c) => c.activeNetworkId);
+    final isDark = context.isDark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Kondisi Sinyal Kanal (4G, 5G, WLAN)',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: 8),
         ...snapshots.map(
           (s) {
             final isActive = s.id == activeId;
+            final activeBorderColor = isDark ? Colors.white : AppTheme.darkNavy;
+            final activeBadgeColor = isDark ? Colors.white : AppTheme.darkNavy;
+            final activeBadgeText = isDark ? AppTheme.pureBlack : Colors.white;
+
             return Card(
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
                 side: BorderSide(
-                  color: isActive ? AppTheme.darkNavy : AppTheme.dividerColor,
+                  color: isActive ? activeBorderColor : context.borderColor,
                   width: isActive ? 1.5 : 1.0,
                 ),
               ),
@@ -477,7 +488,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                   s.technology == NetworkTechnology.nr
                       ? Icons.five_g_outlined
                       : (s.technology == NetworkTechnology.lte ? Icons.cell_tower : Icons.wifi),
-                  color: s.available ? AppTheme.textPrimary : AppTheme.textTertiary,
+                  color: s.available ? context.textPrimaryColor : context.textTertiaryColor,
                   size: 24,
                 ),
                 title: Row(
@@ -486,7 +497,11 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                     Flexible(
                       child: Text(
                         '${s.id} (${s.technology.name.toUpperCase()})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: context.textPrimaryColor,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -495,19 +510,19 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppTheme.darkNavy,
+                          color: activeBadgeColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'AKTIF',
-                          style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: activeBadgeText, fontSize: 9, fontWeight: FontWeight.bold),
                         ),
                       ),
                   ],
                 ),
                 subtitle: Text(
                   'RSS: ${s.rssDbm.toStringAsFixed(1)} dBm · Rate: ${s.dataRateMbps.toStringAsFixed(1)} Mbps · Delay: ${s.delayMs.toStringAsFixed(1)} ms',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 11, color: context.textSecondaryColor),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -515,10 +530,14 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
-                        color: s.available ? AppTheme.surfaceBackground : const Color(0xFFFEF2F2),
+                        color: s.available
+                            ? (isDark ? const Color(0xFF1F2937) : AppTheme.surfaceBackground)
+                            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2)),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: s.available ? AppTheme.dividerColor : const Color(0xFFFECACA),
+                          color: s.available
+                              ? context.borderColor
+                              : (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
                         ),
                       ),
                       child: Text(
@@ -526,7 +545,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
-                          color: s.available ? AppTheme.textPrimary : AppTheme.errorRed,
+                          color: s.available ? context.textPrimaryColor : AppTheme.errorRed,
                         ),
                       ),
                     ),
@@ -535,7 +554,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.link, size: 18),
                         tooltip: 'Pilih sebagai jaringan aktif',
-                        color: AppTheme.textPrimary,
+                        color: context.textPrimaryColor,
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),

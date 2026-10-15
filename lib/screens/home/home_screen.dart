@@ -201,13 +201,13 @@ class _SimulatorWorkflowSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Alur Simulator Vertical Handover',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.2,
-            color: AppTheme.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: 10),
@@ -278,9 +278,9 @@ class _WorkflowStepCard extends StatelessWidget {
       width: 96,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.dividerColor, width: 1.0),
+        border: Border.all(color: context.borderColor, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -290,31 +290,31 @@ class _WorkflowStepCard extends StatelessWidget {
             children: [
               Text(
                 stepNumber,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textTertiary,
+                  color: context.textTertiaryColor,
                 ),
               ),
-              Icon(icon, color: AppTheme.textPrimary, size: 16),
+              Icon(icon, color: context.textPrimaryColor, size: 16),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: context.textPrimaryColor,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
-              color: AppTheme.textSecondary,
+              color: context.textSecondaryColor,
               height: 1.2,
             ),
           ),
@@ -329,9 +329,9 @@ class _WorkflowArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.0),
-      child: Icon(Icons.chevron_right, size: 16, color: AppTheme.textTertiary),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Icon(Icons.chevron_right, size: 16, color: context.textTertiaryColor),
     );
   }
 }
@@ -345,13 +345,13 @@ class _MainMenuGridSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Menu Utama',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.2,
-            color: AppTheme.textPrimary,
+            color: context.textPrimaryColor,
           ),
         ),
         const SizedBox(height: 10),
@@ -408,7 +408,7 @@ class _MainMenuGridSection extends StatelessWidget {
   void _showJumpSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -419,14 +419,14 @@ class _MainMenuGridSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Lompat Simulasi Cepat',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.textPrimaryColor),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Pilih durasi lompatan untuk memajukan skenario mobilitas secara instan:',
-                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                style: TextStyle(fontSize: 12, color: context.textSecondaryColor),
               ),
               const SizedBox(height: 16),
               Wrap(
@@ -437,7 +437,7 @@ class _MainMenuGridSection extends StatelessWidget {
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        side: const BorderSide(color: AppTheme.dividerColor),
+                        side: BorderSide(color: context.borderColor),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -448,8 +448,8 @@ class _MainMenuGridSection extends StatelessWidget {
                       },
                       child: Text(
                         '+$sec Detik',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        style: TextStyle(
+                          color: context.textPrimaryColor,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -485,7 +485,7 @@ class _MenuActionCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+        side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: InkWell(
         onTap: onTap,
@@ -496,16 +496,16 @@ class _MenuActionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: AppTheme.textPrimary, size: 22),
+              Icon(icon, color: context.textPrimaryColor, size: 22),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -513,9 +513,9 @@ class _MenuActionCard extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondaryColor,
                     ),
                   ),
                 ],

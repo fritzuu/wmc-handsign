@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:project_handsign/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('App navigation shell boots and switches tabs cleanly', (tester) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('App navigation shell boots, switches tabs cleanly, and toggles dark mode', (tester) async {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
@@ -11,6 +18,15 @@ void main() {
     expect(find.text('WMC Simulator'), findsOneWidget);
     expect(find.text('Alur Simulator Vertical Handover'), findsOneWidget);
     expect(find.text('Menu Utama'), findsOneWidget);
+
+    // Verifikasi tombol toggle tema cepat di AppBar
+    final themeToggleFinder = find.byTooltip('Beralih ke mode gelap');
+    expect(themeToggleFinder, findsOneWidget);
+    await tester.tap(themeToggleFinder);
+    await tester.pumpAndSettle();
+
+    // Sekarang tooltip berubah ke 'Beralih ke mode terang'
+    expect(find.byTooltip('Beralih ke mode terang'), findsOneWidget);
 
     // 2. Navigasi ke Tab Simulasi (MonitorScreen)
     await tester.tap(find.byIcon(Icons.sensors_outlined));
@@ -30,8 +46,13 @@ void main() {
     await tester.tap(find.byIcon(Icons.tune_outlined));
     await tester.pumpAndSettle();
 
+    expect(find.text('Tema Tampilan Aplikasi'), findsOneWidget);
     expect(find.text('Kelas Aplikasi Aktif (User Preference)'), findsOneWidget);
     expect(find.text('Parameter Lingkungan Simulasi'), findsOneWidget);
+
+    // Uji selector tema di Settings
+    await tester.tap(find.text('Terang'));
+    await tester.pumpAndSettle();
 
     // 5. Kembali ke Beranda
     await tester.tap(find.byIcon(Icons.home_outlined));

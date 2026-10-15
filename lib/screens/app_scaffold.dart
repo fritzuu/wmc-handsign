@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../core/simulation/simulation.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_controller.dart';
 
 /// Shell utama aplikasi yang membungkus seluruh navigasi tab dalam
 /// kontainer mobile viewport terpusat (Centered Mobile Viewport, maxWidth: 440px)
-/// agar tampilan di desktop Linux maupun mobile konsisten sempurna.
+/// dengan dukungan Light & Dark Mode.
 class AppScaffold extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -18,16 +19,18 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDark;
+
     return Scaffold(
-      backgroundColor: AppTheme.desktopCanvas,
+      backgroundColor: context.desktopCanvasColor,
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 440),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceBackground,
+            color: context.scaffoldBg,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.25),
                 blurRadius: 32,
                 offset: const Offset(0, 4),
               ),
@@ -35,7 +38,7 @@ class AppScaffold extends StatelessWidget {
           ),
           child: Scaffold(
             appBar: AppBar(
-              title: const Column(
+              title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -44,34 +47,46 @@ class AppScaffold extends StatelessWidget {
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.3,
-                      color: AppTheme.textPrimary,
+                      color: context.textPrimaryColor,
                     ),
                   ),
                   Text(
                     'Vertical Handover Decision System',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.textSecondary,
+                      color: context.textSecondaryColor,
                       fontWeight: FontWeight.normal,
                     ),
                   ),
                 ],
               ),
-              bottom: const PreferredSize(
-                preferredSize: Size.fromHeight(1),
-                child: Divider(height: 1, color: AppTheme.dividerColor),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Divider(height: 1, color: context.borderColor),
               ),
-              actions: const [
-                _LiveStatusBadge(),
-                SizedBox(width: 14),
+              actions: [
+                IconButton(
+                  tooltip: isDark ? 'Beralih ke mode terang' : 'Beralih ke mode gelap',
+                  icon: Icon(
+                    isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    size: 19,
+                    color: context.textPrimaryColor,
+                  ),
+                  onPressed: () {
+                    context.read<ThemeController>().toggleTheme(context);
+                  },
+                ),
+                const SizedBox(width: 2),
+                const _LiveStatusBadge(),
+                const SizedBox(width: 14),
               ],
             ),
             body: navigationShell,
             bottomNavigationBar: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: Theme.of(context).navigationBarTheme.backgroundColor ?? context.cardColor,
                 border: Border(
-                  top: BorderSide(color: AppTheme.dividerColor, width: 1.0),
+                  top: BorderSide(color: context.borderColor, width: 1.0),
                 ),
               ),
               child: NavigationBar(
@@ -114,7 +129,7 @@ class AppScaffold extends StatelessWidget {
   }
 }
 
-/// Badge indikator status aktif & sumber data (Synthetic RF vs Live Sensor)
+/// Badge indikator status eksekusi simulasi di pojok kanan AppBar.
 class _LiveStatusBadge extends StatelessWidget {
   const _LiveStatusBadge();
 
@@ -127,9 +142,9 @@ class _LiveStatusBadge extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 14),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceBackground,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(AppTheme.chipBorderRadius),
-          border: Border.all(color: AppTheme.dividerColor, width: 1.0),
+          border: Border.all(color: context.borderColor, width: 1.0),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -138,17 +153,17 @@ class _LiveStatusBadge extends StatelessWidget {
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: isRunning ? AppTheme.successGreen : AppTheme.textTertiary,
+                color: isRunning ? AppTheme.successGreen : context.textTertiaryColor,
                 shape: BoxShape.circle,
               ),
             ),
             const SizedBox(width: 6),
             Text(
               isRunning ? 'LIVE' : 'STANDBY',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: context.textPrimaryColor,
                 letterSpacing: 0.5,
               ),
             ),

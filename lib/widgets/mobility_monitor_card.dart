@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/mobility/mobility.dart';
+import '../theme/app_theme.dart';
 
 /// Widget ringkas untuk menampilkan status mobilitas pengguna
 /// pada Live Monitor atau Dashboard Simulasi WMC.
@@ -15,9 +16,10 @@ class MobilityMonitorCard extends StatelessWidget {
         final isMoving = state.isMoving;
 
         return Card(
-          elevation: 2,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+            side: BorderSide(color: context.borderColor, width: 1.0),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -71,6 +73,7 @@ class MobilityMonitorCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildMetricTile(
+                        context: context,
                         label: 'Kecepatan Efektif',
                         value: '${controller.effectiveSpeed.toStringAsFixed(2)} m/s',
                         subtitle: controller.isRandomWaypointActive
@@ -82,6 +85,7 @@ class MobilityMonitorCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildMetricTile(
+                        context: context,
                         label: 'Status Gerak',
                         value: isMoving ? 'MOVING' : 'PAUSED',
                         subtitle: isMoving
@@ -99,6 +103,7 @@ class MobilityMonitorCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildMetricTile(
+                        context: context,
                         label: 'Posisi Pengguna (X, Y)',
                         value: '(${state.position.x.toStringAsFixed(1)}, ${state.position.y.toStringAsFixed(1)}) m',
                         subtitle: 'Area [0, ${controller.generator.config.areaWidth.toInt()}] m',
@@ -108,6 +113,7 @@ class MobilityMonitorCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildMetricTile(
+                        context: context,
                         label: 'Target Waypoint (X, Y)',
                         value: '(${state.currentWaypoint.x.toStringAsFixed(1)}, ${state.currentWaypoint.y.toStringAsFixed(1)}) m',
                         subtitle: 'Jarak: ${state.position.distanceTo(state.currentWaypoint).toStringAsFixed(1)} m',
@@ -166,17 +172,20 @@ class MobilityMonitorCard extends StatelessWidget {
   }
 
   Widget _buildMetricTile({
+    required BuildContext context,
     required String label,
     required String value,
     required String subtitle,
     required Color color,
   }) {
+    final isDark = context.isDark;
+
     return Container(
       padding: const EdgeInsets.all(10.0),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withValues(alpha: isDark ? 0.35 : 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +194,7 @@ class MobilityMonitorCard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey[700],
+              color: context.textSecondaryColor,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -195,7 +204,7 @@ class MobilityMonitorCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: isDark ? Colors.white : color,
             ),
           ),
           const SizedBox(height: 2),
@@ -203,7 +212,7 @@ class MobilityMonitorCard extends StatelessWidget {
             subtitle,
             style: TextStyle(
               fontSize: 10,
-              color: Colors.grey[600],
+              color: context.textTertiaryColor,
             ),
           ),
         ],

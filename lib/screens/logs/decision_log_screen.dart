@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 
-/// Screen 7 — Log Keputusan (Decision Audit Log sesuai PRD v1.0/v2.0)
+/// Screen 9/Audit — Layar Log Riwayat Keputusan Handover (Monokrom Modern & Dark Mode)
 class DecisionLogScreen extends StatefulWidget {
   const DecisionLogScreen({super.key});
 
@@ -17,11 +17,12 @@ class _DecisionLogScreenState extends State<DecisionLogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final history = context.select<SimulationController, List<DecisionRecord>>(
+    final records = context.select<SimulationController, List<DecisionRecord>>(
       (c) => c.history,
     );
+    final isDark = context.isDark;
 
-    final filteredRecords = history.where((r) {
+    final filteredRecords = records.where((r) {
       if (_selectedFilter == 'Handover') {
         return r.isHandoverRecommended;
       }
@@ -36,20 +37,27 @@ class _DecisionLogScreenState extends State<DecisionLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Log Keputusan'),
+        title: Text('Log Keputusan', style: TextStyle(color: context.textPrimaryColor)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: context.borderColor),
+        ),
       ),
       body: Column(
         children: [
           // Filter Chips Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            color: Colors.white,
+            color: context.cardColor,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: ['Semua', 'Handover', 'Stay', 'Insufficient'].map((filter) {
                   final isSelected = _selectedFilter == filter;
+                  final chipSelectedBg = isDark ? Colors.white : AppTheme.darkNavy;
+                  final chipSelectedText = isDark ? AppTheme.pureBlack : Colors.white;
+
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: FilterChip(
@@ -58,14 +66,14 @@ class _DecisionLogScreenState extends State<DecisionLogScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.white : AppTheme.textPrimary,
+                          color: isSelected ? chipSelectedText : context.textPrimaryColor,
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: AppTheme.darkNavy,
-                      backgroundColor: Colors.white,
+                      selectedColor: chipSelectedBg,
+                      backgroundColor: context.cardColor,
                       side: BorderSide(
-                        color: isSelected ? AppTheme.darkNavy : AppTheme.dividerColor,
+                        color: isSelected ? chipSelectedBg : context.borderColor,
                       ),
                       onSelected: (selected) {
                         if (selected) {
@@ -78,15 +86,15 @@ class _DecisionLogScreenState extends State<DecisionLogScreen> {
               ),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: context.borderColor),
 
           // Log List
           Expanded(
             child: filteredRecords.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Belum ada catatan log untuk filter ini.',
-                      style: TextStyle(color: AppTheme.textSecondary),
+                      style: TextStyle(color: context.textSecondaryColor),
                     ),
                   )
                 : ListView.builder(
@@ -117,18 +125,19 @@ class _DecisionRecordCard extends StatelessWidget {
     final isHandover = record.isHandoverRecommended;
     final isStay = !isHandover && record.stabilizedAction == DecisionAction.stay;
     final isFallback = isHandover && record.stabilizedAction != DecisionAction.recommendSwitch;
+    final isDark = context.isDark;
 
     final badgeColor = isFallback
         ? AppTheme.errorRed
         : (isHandover
-            ? AppTheme.darkNavy
-            : (isStay ? AppTheme.surfaceBackground : AppTheme.warningOrange));
+            ? (isDark ? Colors.white : AppTheme.darkNavy)
+            : (isStay ? (isDark ? const Color(0xFF262626) : AppTheme.surfaceBackground) : AppTheme.warningOrange));
 
     final badgeTextColor = isFallback
         ? Colors.white
         : (isHandover
-            ? Colors.white
-            : (isStay ? AppTheme.textPrimary : Colors.white));
+            ? (isDark ? AppTheme.pureBlack : Colors.white)
+            : (isStay ? context.textPrimaryColor : Colors.white));
 
     final badgeText = isFallback
         ? 'FALLBACK HO'
@@ -150,7 +159,7 @@ class _DecisionRecordCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: const BorderSide(color: AppTheme.dividerColor, width: 1.0),
+        side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -169,7 +178,7 @@ class _DecisionRecordCard extends StatelessWidget {
                           color: badgeColor,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: isStay ? AppTheme.dividerColor : Colors.transparent,
+                            color: isStay ? context.borderColor : Colors.transparent,
                           ),
                         ),
                         child: Text(
@@ -186,10 +195,10 @@ class _DecisionRecordCard extends StatelessWidget {
                         child: Text(
                           'Langkah #${record.stepIndex} (${record.elapsedSeconds.toStringAsFixed(1)}s)',
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
+                            color: context.textPrimaryColor,
                           ),
                         ),
                       ),
@@ -199,23 +208,23 @@ class _DecisionRecordCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   record.trafficClass.name,
-                  style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 10, color: context.textSecondaryColor),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             Text(
               titleText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: context.textPrimaryColor,
               ),
             ),
             const SizedBox(height: 3),
             Text(
               'QoS: ${record.qosFactor?.toStringAsFixed(2) ?? '-'} · $hfText · Alasan: ${record.stabilizedReason.name}',
-              style: const TextStyle(fontSize: 10.5, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 10.5, color: context.textSecondaryColor),
             ),
           ],
         ),
