@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'core/mobility/mobility.dart';
-import 'widgets/mobility_monitor_card.dart';
+
+import 'core/simulation/simulation.dart';
+import 'router/app_router.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,47 +17,14 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => MobilityController(
-            initialMode: MobilitySpeedMode.manualStatic,
-            initialManualSpeed: 1.4,
-          ),
+          create: (_) => SimulationController(),
         ),
       ],
-      child: MaterialApp(
-        title: 'WMC Handover Recommender',
+      child: MaterialApp.router(
+        title: 'WMC Simulator',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF0D1B2A),
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-        ),
-        home: const HomeScreen(),
-      ),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('WMC Vertical Handover'),
-        backgroundColor: const Color(0xFF0D1B2A),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: const [
-            MobilityMonitorCard(),
-          ],
-        ),
+        theme: AppTheme.lightTheme,
+        routerConfig: appRouter,
       ),
     );
   }
