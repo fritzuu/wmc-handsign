@@ -58,6 +58,11 @@ class AppProfile {
   final CriterionWeights? customWeights;
   final double? customThreshold;
 
+  /// Apakah aplikasi ini mengonsumsi kuota data dalam volume masif (misal Video Streaming 4K, Cloud Download).
+  /// Sesuai kebijakan 3GPP Wi-Fi Offloading: aplikasi boros kuota memprioritaskan Wi-Fi unmetered
+  /// jika kualitas Wi-Fi telah memenuhi standar SLA aplikasi.
+  final bool isHeavyDataConsumer;
+
   const AppProfile({
     required this.id,
     required this.name,
@@ -68,6 +73,7 @@ class AppProfile {
     required this.sla,
     this.customWeights,
     this.customThreshold,
+    this.isHeavyDataConsumer = false,
   });
 
   AppProfile copyWith({
@@ -80,6 +86,7 @@ class AppProfile {
     AppQosRequirement? sla,
     CriterionWeights? customWeights,
     double? customThreshold,
+    bool? isHeavyDataConsumer,
   }) {
     return AppProfile(
       id: id ?? this.id,
@@ -91,6 +98,7 @@ class AppProfile {
       sla: sla ?? this.sla,
       customWeights: customWeights ?? this.customWeights,
       customThreshold: customThreshold ?? this.customThreshold,
+      isHeavyDataConsumer: isHeavyDataConsumer ?? this.isHeavyDataConsumer,
     );
   }
 
@@ -141,6 +149,7 @@ class AppCatalog {
       description: 'Prioritas throughput tinggi untuk video HD/4K bebas buffering.',
       icon: Icons.play_circle_outline,
       trafficClass: TrafficClass.streaming,
+      isHeavyDataConsumer: true,
       sla: AppQosRequirement(
         minDataRateMbps: 5.0,
         targetDataRateMbps: 25.0,
@@ -157,6 +166,7 @@ class AppCatalog {
       description: 'Prioritas latensi super rendah (<50ms) dan kestabilan bebas packet loss.',
       icon: Icons.sports_esports_outlined,
       trafficClass: TrafficClass.interactive,
+      isHeavyDataConsumer: false,
       sla: AppQosRequirement(
         minDataRateMbps: 1.0,
         targetDataRateMbps: 5.0,
@@ -173,6 +183,7 @@ class AppCatalog {
       description: 'Prioritas latensi rendah dan transmisi dua arah stabil tanpa jitter.',
       icon: Icons.call_outlined,
       trafficClass: TrafficClass.conversational,
+      isHeavyDataConsumer: false,
       sla: AppQosRequirement(
         minDataRateMbps: 0.2,
         targetDataRateMbps: 2.0,
@@ -189,6 +200,7 @@ class AppCatalog {
       description: 'Prioritas kecepatan unduh maksimal, toleran terhadap delay tinggi.',
       icon: Icons.cloud_download_outlined,
       trafficClass: TrafficClass.background,
+      isHeavyDataConsumer: true,
       sla: AppQosRequirement(
         minDataRateMbps: 10.0,
         targetDataRateMbps: 100.0,

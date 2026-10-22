@@ -250,8 +250,11 @@ class AppQoECalculator {
         projectedScore = targetDelay < 40.0 ? 95.0 : 80.0;
         benefitText = 'Pindah ke ${recommendedSnapshot.displayName}: Suara jernih & bebas putus';
       } else if (appProfile.id == 'youtube') {
+        final isTargetWifi = recommendedSnapshot.technology == NetworkTechnology.wlan;
         projectedScore = targetBw >= 35.0 ? 98.0 : 85.0;
-        benefitText = 'Pindah ke ${recommendedSnapshot.displayName}: Bandwidth ${targetBw.toStringAsFixed(0)} Mbps (Tanpa Buffering)';
+        benefitText = isTargetWifi
+            ? 'Pindah ke Wi-Fi: Streaming 4K bebas kuota seluler (${targetBw.toStringAsFixed(0)} Mbps)'
+            : 'Pindah ke ${recommendedSnapshot.displayName}: Bandwidth ${targetBw.toStringAsFixed(0)} Mbps (Tanpa Buffering)';
       } else if (appProfile.id == 'cloud_download') {
         final isTargetWifi = recommendedSnapshot.technology == NetworkTechnology.wlan;
         projectedScore = isTargetWifi ? 95.0 : 85.0;

@@ -79,8 +79,30 @@ class AppNetworkEvaluator {
       return _evaluateCandidate(c, appProfile, weights);
     }).toList();
 
-    // Urutkan berdasarkan suitabilityScore menurun
-    evaluatedList.sort((a, b) => b.suitabilityScore.compareTo(a.suitabilityScore));
+    // Urutkan berdasarkan suitabilityScore menurun dengan tie-breaker cerdas
+    evaluatedList.sort((a, b) {
+      final scoreComparison = b.suitabilityScore.compareTo(a.suitabilityScore);
+      if (scoreComparison != 0) return scoreComparison;
+
+      // Tie-breaking cerdas sesuai profil aplikasi
+      if (appProfile.isHeavyDataConsumer) {
+        // Untuk aplikasi boros kuota: prioritaskan Wi-Fi unmetered
+        if (a.candidate.technology == NetworkTechnology.wlan &&
+            b.candidate.technology != NetworkTechnology.wlan) {
+          return -1;
+        }
+        if (b.candidate.technology == NetworkTechnology.wlan &&
+            a.candidate.technology != NetworkTechnology.wlan) {
+          return 1;
+        }
+      } else {
+        // Untuk aplikasi sensitif latensi (Gaming, VoIP): prioritaskan delay terendah
+        final delayComparison = a.candidate.delayMs.compareTo(b.candidate.delayMs);
+        if (delayComparison != 0) return delayComparison;
+      }
+
+      return b.candidate.dataRateMbps.compareTo(a.candidate.dataRateMbps);
+    });
 
     final best = evaluatedList.first;
     final summary = _generateSummary(appProfile, best, evaluatedList);
@@ -165,6 +187,11 @@ class AppNetworkEvaluator {
     // Terapkan penalti jika melanggar SLA batas minimum
     if (isViolated) {
       rawScore = math.min(rawScore, 49.0);
+    } else if (appProfile.isHeavyDataConsumer &&
+        candidate.technology == NetworkTechnology.wlan) {
+      // 3GPP Wi-Fi Offloading Policy:
+      // Berikan insentif offloading kuota unmetered (+8.0 poin) jika Wi-Fi memenuhi standar SLA aplikasi
+      rawScore += 8.0;
     }
 
     final finalScore = rawScore.clamp(0.0, 100.0);
@@ -202,8 +229,13 @@ class AppNetworkEvaluator {
   ) {
     final networkName = best.candidate.displayName;
     final scoreStr = best.suitabilityScore.toStringAsFixed(0);
+    final isWifiOffload = appProfile.isHeavyDataConsumer &&
+        best.candidate.technology == NetworkTechnology.wlan;
 
     if (best.level == SuitabilityLevel.optimal) {
+      if (isWifiOffload) {
+        return '$networkName adalah pilihan terbaik untuk ${appProfile.name}: menghemat kuota seluler dengan performa bandwidth (${best.candidate.dataRateMbps.toStringAsFixed(1)} Mbps) yang melampaui standar SLA streaming.';
+      }
       return '$networkName adalah pilihan terbaik untuk ${appProfile.name} dengan skor kesesuaian $scoreStr%. Kualitas throughput (${best.candidate.dataRateMbps.toStringAsFixed(1)} Mbps) dan latensi (${best.candidate.delayMs.toStringAsFixed(1)} ms) sangat memenuhi standar pengalaman pengguna.';
     } else if (best.level == SuitabilityLevel.acceptable) {
       return '$networkName cukup memadai untuk ${appProfile.name} ($scoreStr%), meskipun terdapat beberapa parameter yang belum mencapai target optimal.';

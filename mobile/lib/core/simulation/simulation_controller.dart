@@ -325,11 +325,27 @@ class SimulationController extends ChangeNotifier {
   }
 
   /// Apakah sistem saat ini merekomendasikan perpindahan ke jaringan target
-  /// (baik melalui evaluasi Fuzzy-TOPSIS normal maupun fallback link-failure).
+  /// (baik melalui evaluasi Fuzzy-TOPSIS normal, Wi-Fi offload hemat kuota, maupun fallback link-failure).
   bool get isHandoverRecommended {
     if (isActiveNetworkUnavailable) {
       return fallbackTargetId != null;
     }
+
+    // 3GPP Wi-Fi Offloading Policy:
+    // Jika profil aplikasi boros kuota (YouTube / Download), pengguna berada di jaringan seluler (4G/5G),
+    // dan kandidat Wi-Fi terbukti optimal (suitabilityScore >= 80.0, tanpa pelanggaran SLA),
+    // sistem memprioritaskan rekomendasi offloading ke Wi-Fi unmetered.
+    if (_activeAppProfile.isHeavyDataConsumer &&
+        activeNetworkSnapshot?.technology != NetworkTechnology.wlan) {
+      final bestAppCand = _currentAppReport?.bestCandidate;
+      if (bestAppCand != null &&
+          bestAppCand.candidate.technology == NetworkTechnology.wlan &&
+          bestAppCand.suitabilityScore >= 80.0 &&
+          !bestAppCand.isSlaViolated) {
+        return true;
+      }
+    }
+
     return _latestDecision != null &&
         _latestDecision!.action == DecisionAction.recommendSwitch &&
         _latestDecision!.targetNetworkId != null &&
@@ -341,6 +357,18 @@ class SimulationController extends ChangeNotifier {
     if (isActiveNetworkUnavailable) {
       return fallbackTargetId;
     }
+
+    if (_activeAppProfile.isHeavyDataConsumer &&
+        activeNetworkSnapshot?.technology != NetworkTechnology.wlan) {
+      final bestAppCand = _currentAppReport?.bestCandidate;
+      if (bestAppCand != null &&
+          bestAppCand.candidate.technology == NetworkTechnology.wlan &&
+          bestAppCand.suitabilityScore >= 80.0 &&
+          !bestAppCand.isSlaViolated) {
+        return bestAppCand.candidate.id;
+      }
+    }
+
     return isHandoverRecommended ? _latestDecision!.targetNetworkId : null;
   }
 
@@ -505,6 +533,13 @@ class SimulationController extends ChangeNotifier {
     }
 
     // Buat catatan riwayat audit log
+    final effectiveTarget = recommendedTargetId;
+    final isSwitchRecommended = isHandoverRecommended;
+    final isWifiOffloadRec = isSwitchRecommended &&
+        effectiveTarget != null &&
+        _activeAppProfile.isHeavyDataConsumer &&
+        _currentSnapshots.any((s) => s.id == effectiveTarget && s.technology == NetworkTechnology.wlan);
+
     final record = DecisionRecord(
       stepIndex: _stepIndex,
       timestamp: DateTime.now(),
@@ -519,9 +554,9 @@ class SimulationController extends ChangeNotifier {
       rawAction: _latestRawDecision!.action,
       rawReason: _latestRawDecision!.reason,
       rawTargetId: _latestRawDecision!.targetNetworkId,
-      stabilizedAction: _latestDecision!.action,
-      stabilizedReason: _latestDecision!.reason,
-      stabilizedTargetId: _latestDecision!.targetNetworkId,
+      stabilizedAction: isSwitchRecommended ? DecisionAction.recommendSwitch : _latestDecision!.action,
+      stabilizedReason: isSwitchRecommended ? DecisionReason.candidateSelected : _latestDecision!.reason,
+      stabilizedTargetId: isSwitchRecommended ? effectiveTarget : _latestDecision!.targetNetworkId,
       baselineRssTargetId: _latestDecision!.baselineRssNetworkId,
       baselineTopsisTargetId: _latestDecision!.baselineTopsisNetworkId,
       snapshots: _currentSnapshots,

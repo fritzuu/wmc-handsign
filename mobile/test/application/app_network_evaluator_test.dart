@@ -91,6 +91,47 @@ void main() {
       expect(slowEval.violations.any((v) => v.contains('Throughput')), isTrue);
     });
 
+    test('Content & Quota-Aware: YouTube streaming memilih Wi-Fi (offload unmetered), Gaming memilih 5G (low latency)', () {
+      final youtubeProfile = AppCatalog.getById('youtube');
+      final gamingProfile = AppCatalog.getById('mobile_legends');
+
+      final candidates = [
+        NetworkSnapshot(
+          id: '5g_nr',
+          technology: NetworkTechnology.nr,
+          rssDbm: -65.0,
+          dataRateMbps: 350.0,
+          delayMs: 4.0,
+          ber: 1e-8,
+        ),
+        NetworkSnapshot(
+          id: 'wifi_cafe',
+          technology: NetworkTechnology.wlan,
+          rssDbm: -55.0,
+          dataRateMbps: 85.0,
+          delayMs: 15.0,
+          ber: 1e-7,
+        ),
+      ];
+
+      // 1. Untuk YouTube: Wi-Fi harus menang karena unmetered quota offloading
+      final youtubeReport = evaluator.evaluate(
+        appProfile: youtubeProfile,
+        candidates: candidates,
+      );
+      expect(youtubeReport.bestCandidate, isNotNull);
+      expect(youtubeReport.bestCandidate!.candidate.id, equals('wifi_cafe'));
+      expect(youtubeReport.summary, contains('menghemat kuota'));
+
+      // 2. Untuk Gaming: 5G NR harus menang karena ping paling rendah (4ms vs 15ms)
+      final gamingReport = evaluator.evaluate(
+        appProfile: gamingProfile,
+        candidates: candidates,
+      );
+      expect(gamingReport.bestCandidate, isNotNull);
+      expect(gamingReport.bestCandidate!.candidate.id, equals('5g_nr'));
+    });
+
     test('Menangani daftar kandidat kosong atau tidak ada kandidat tersedia', () {
       final report = evaluator.evaluate(
         appProfile: AppCatalog.getById('youtube'),

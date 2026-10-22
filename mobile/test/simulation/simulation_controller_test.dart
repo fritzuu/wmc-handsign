@@ -498,5 +498,28 @@ void main() {
       expect(nrOutdoor.dataRateMbps, greaterThan(100.0));
       expect(nrOutdoor.delayMs, lessThan(25.0));
     });
+
+    test('Content & Quota-Aware Offload: YouTube streaming merekomendasikan offload ke Wi-Fi saat terjangkau', () {
+      final env = SyntheticNetworkEnvironment.seeded(42);
+      // Posisikan user di dekat Wi-Fi AP (120, 120)
+      final rwp = RandomWaypointGenerator(
+        config: const RandomWaypointConfig(
+          initialPosition: MobilityPoint(120.0, 120.0),
+          minSpeed: 0.0,
+          maxSpeed: 0.0,
+        ),
+      );
+
+      final controller = SimulationController(
+        rwpGenerator: rwp,
+        networkProvider: env,
+        initialActiveNetworkId: '4g_lte', // Pengguna sedang pakai seluler
+        initialAppProfile: AppCatalog.getById('youtube'), // Aplikasi boros kuota
+      );
+
+      // Karena Wi-Fi AP terjangkau dan optimal, controller harus merekomendasikan Wi-Fi
+      expect(controller.isHandoverRecommended, isTrue);
+      expect(controller.recommendedTargetId, equals('wifi'));
+    });
   });
 }
