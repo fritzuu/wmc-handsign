@@ -200,16 +200,15 @@ class AppNetworkEvaluator {
     CandidateSuitability best,
     List<CandidateSuitability> all,
   ) {
-    final techName = best.candidate.technology.name.toUpperCase();
-    final id = best.candidate.id;
+    final networkName = best.candidate.displayName;
     final scoreStr = best.suitabilityScore.toStringAsFixed(0);
 
     if (best.level == SuitabilityLevel.optimal) {
-      return '$techName ($id) adalah pilihan terbaik untuk ${appProfile.name} dengan skor kesesuaian $scoreStr%. Kualitas throughput (${best.candidate.dataRateMbps.toStringAsFixed(1)} Mbps) dan latensi (${best.candidate.delayMs.toStringAsFixed(1)} ms) sangat memenuhi standar pengalaman pengguna.';
+      return '$networkName adalah pilihan terbaik untuk ${appProfile.name} dengan skor kesesuaian $scoreStr%. Kualitas throughput (${best.candidate.dataRateMbps.toStringAsFixed(1)} Mbps) dan latensi (${best.candidate.delayMs.toStringAsFixed(1)} ms) sangat memenuhi standar pengalaman pengguna.';
     } else if (best.level == SuitabilityLevel.acceptable) {
-      return '$techName ($id) cukup memadai untuk ${appProfile.name} ($scoreStr%), meskipun terdapat beberapa parameter yang belum mencapai target optimal.';
+      return '$networkName cukup memadai untuk ${appProfile.name} ($scoreStr%), meskipun terdapat beberapa parameter yang belum mencapai target optimal.';
     } else {
-      return 'Tidak ada jaringan yang memenuhi SLA ideal untuk ${appProfile.name}. $techName ($id) memiliki skor tertinggi ($scoreStr%), namun disarankan mencari jangkauan sinyal yang lebih baik.';
+      return 'Tidak ada jaringan yang memenuhi SLA ideal untuk ${appProfile.name}. $networkName memiliki skor tertinggi ($scoreStr%), namun disarankan mencari jangkauan sinyal yang lebih baik.';
     }
   }
 }

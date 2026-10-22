@@ -91,10 +91,10 @@ def main() -> None:
     # 5. Integrasi End-to-End dengan Baseline Single TOPSIS Utility Function
     # -------------------------------------------------------------------------
     print_banner("5. INTEGRASI DENGAN BASELINE SINGLE TOPSIS UTILITY FUNCTION")
-    # Skenario 3 kandidat heterogen: 4G (moderate), 5G (good), WLAN (poor)
-    c_lte = generator.generate_profile("4G", condition="moderate", profile_id="LTE_Macro")
-    c_nr = generator.generate_profile("5G", condition="good", profile_id="NR_SmallCell")
-    c_wlan = generator.generate_profile("WLAN", condition="poor", profile_id="WLAN_AP")
+    # Skenario 3 kandidat heterogen: 4G (moderate), 5G (good), Wi-Fi (poor)
+    c_lte = generator.generate_profile("4G", condition="moderate", profile_id="4G")
+    c_nr = generator.generate_profile("5G", condition="good", profile_id="5G")
+    c_wlan = generator.generate_profile("WLAN", condition="poor", profile_id="Wi-Fi")
 
     candidates = [c_lte, c_nr, c_wlan]
     alternatives = [TopsisAlternative.from_network_snapshot(c.to_network_snapshot()) for c in candidates]

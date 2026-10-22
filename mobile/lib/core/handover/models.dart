@@ -2,6 +2,49 @@ enum TrafficClass { conversational, streaming, interactive, background }
 
 enum NetworkTechnology { lte, nr, wlan }
 
+extension NetworkTechnologyDisplay on NetworkTechnology {
+  /// Nama ringkas teknologi (misal: "4G", "5G", "Wi-Fi")
+  String get shortName {
+    switch (this) {
+      case NetworkTechnology.lte:
+        return '4G';
+      case NetworkTechnology.nr:
+        return '5G';
+      case NetworkTechnology.wlan:
+        return 'Wi-Fi';
+    }
+  }
+
+  /// Nama tampilan ramah pengguna (misal: "4G", "5G", "Wi-Fi")
+  String get displayName {
+    switch (this) {
+      case NetworkTechnology.lte:
+        return '4G';
+      case NetworkTechnology.nr:
+        return '5G';
+      case NetworkTechnology.wlan:
+        return 'Wi-Fi';
+    }
+  }
+}
+
+/// Helper fungsi untuk memformat identifier jaringan menjadi nama tampilan yang ramah pengguna.
+/// Menangani format standar ('4g_lte', '5g_nr', 'wifi') dan format lama ('lte_macro', 'nr_smallcell', 'wifi_ap').
+String formatNetworkLabel(String? networkId) {
+  if (networkId == null || networkId.trim().isEmpty) return '-';
+  final lower = networkId.trim().toLowerCase();
+  if (lower == '5g' || lower == '5g_nr' || lower == 'nr_smallcell' || lower == 'nr') {
+    return '5G';
+  }
+  if (lower == '4g' || lower == '4g_lte' || lower == 'lte_macro' || lower == 'lte') {
+    return '4G';
+  }
+  if (lower == 'wifi' || lower == 'wifi_ap' || lower == 'wlan') {
+    return 'Wi-Fi';
+  }
+  return networkId;
+}
+
 enum ParameterSource { estimated, measured, synthetic }
 
 double unitInterval(double value) => value.clamp(0.0, 1.0).toDouble();
@@ -58,6 +101,11 @@ class NetworkSnapshot {
     'available': available,
     'parameter_source': parameterSource.name,
   };
+}
+
+extension NetworkSnapshotDisplay on NetworkSnapshot {
+  /// Nama tampilan ramah pengguna (misal: "Wi-Fi", "5G NR", "4G LTE").
+  String get displayName => formatNetworkLabel(id);
 }
 
 class NetworkRank {

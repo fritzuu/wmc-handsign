@@ -147,8 +147,8 @@ class _DecisionRecordCard extends StatelessWidget {
 
     final targetId = record.effectiveTargetId;
     final titleText = isHandover && targetId != null
-        ? '${record.activeNetworkId} → $targetId'
-        : 'Tetap pada ${record.activeNetworkId}';
+        ? '${formatNetworkLabel(record.activeNetworkId)} → ${formatNetworkLabel(targetId)}'
+        : 'Tetap pada ${formatNetworkLabel(record.activeNetworkId)}';
 
     final hfText = record.handoverFactor != null
         ? 'HF: ${record.handoverFactor!.toStringAsFixed(2)} (Ambang: ${record.threshold?.toStringAsFixed(2) ?? '-'})'

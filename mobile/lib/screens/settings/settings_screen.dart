@@ -367,7 +367,7 @@ class _SimulationParametersSection extends StatelessWidget {
             Divider(height: 18, color: context.borderColor),
             const _InfoRow(label: 'Dimensi Area', value: '500m × 500m (Boundary Clamped)'),
             const SizedBox(height: 6),
-            const _InfoRow(label: 'Jaringan Heterogen', value: '4G LTE Macro, 5G NR Small Cell, WLAN AP'),
+            const _InfoRow(label: 'Jaringan Heterogen', value: '4G, 5G, dan Wi-Fi (WLAN)'),
             const SizedBox(height: 6),
             const _InfoRow(label: 'Interval Evaluasi', value: '1.0 detik / tick'),
             const SizedBox(height: 6),

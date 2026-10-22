@@ -106,7 +106,7 @@ class AppRecommendationCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            '${best.candidate.technology.name.toUpperCase()} (${best.candidate.id})',
+                            best.candidate.displayName,
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -205,9 +205,9 @@ class AppRecommendationCard extends StatelessWidget {
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 75,
+                        width: 85,
                         child: Text(
-                          '${cand.candidate.technology.name.toUpperCase()} ${cand.candidate.id}',
+                          cand.candidate.displayName,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: isCandActive ? FontWeight.bold : FontWeight.normal,
@@ -258,7 +258,7 @@ class AppRecommendationCard extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.arrow_forward, size: 14),
-                  label: Text('Beralih ke ${best.candidate.id} (${best.candidate.technology.name.toUpperCase()})'),
+                  label: Text('Beralih ke ${best.candidate.displayName}'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                   ),

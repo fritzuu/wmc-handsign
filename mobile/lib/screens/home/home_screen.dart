@@ -42,10 +42,10 @@ class _SimulationStatusHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRunning = context.select<SimulationController, bool>((c) => c.isRunning);
     final stepIndex = context.select<SimulationController, int>((c) => c.stepIndex);
-    final activeNetworkId = context.select<SimulationController, String>((c) => c.activeNetworkId);
+    final activeDisplayName = context.select<SimulationController, String>((c) => c.activeNetworkDisplayName);
     final isUnavailable = context.select<SimulationController, bool>((c) => c.isActiveNetworkUnavailable);
     final isRecommended = context.select<SimulationController, bool>((c) => c.isHandoverRecommended);
-    final targetId = context.select<SimulationController, String?>((c) => c.recommendedTargetId);
+    final targetDisplayName = context.select<SimulationController, String?>((c) => c.recommendedTargetDisplayName);
 
     return Container(
       decoration: BoxDecoration(
@@ -103,8 +103,8 @@ class _SimulationStatusHeroCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             isUnavailable
-                ? 'Koneksi Terputus: $activeNetworkId'
-                : (isRecommended ? 'Rekomendasi: Pindah ke $targetId' : 'Koneksi Stabil: $activeNetworkId'),
+                ? 'Koneksi Terputus: $activeDisplayName'
+                : (isRecommended ? 'Rekomendasi: Pindah ke $targetDisplayName' : 'Koneksi Stabil: $activeDisplayName'),
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -115,7 +115,7 @@ class _SimulationStatusHeroCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             isUnavailable
-                ? 'Sinyal $activeNetworkId terputus. Sistem menyiapkan perpindahan darurat.'
+                ? 'Sinyal $activeDisplayName terputus. Sistem menyiapkan perpindahan darurat.'
                 : (isRecommended
                     ? 'Algoritma mendeteksi alternatif dengan performa lebih optimal.'
                     : 'Kanal memenuhi kebutuhan QoS profil aplikasi saat ini.'),

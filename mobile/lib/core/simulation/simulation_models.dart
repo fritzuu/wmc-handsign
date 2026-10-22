@@ -54,12 +54,12 @@ class BaseStationNode {
       };
 }
 
-/// Daftar default node pemancar heterogen (4G Macro, 5G Small Cell, Wi-Fi AP)
+/// Daftar default node pemancar heterogen (4G, 5G, Wi-Fi)
 /// pada area simulasi 500m x 500m sesuai spesifikasi PRD v2.0.
 final List<BaseStationNode> defaultSimulationBaseStations = [
   const BaseStationNode(
-    id: 'lte_macro',
-    name: '4G LTE Macro Tower',
+    id: '4g_lte',
+    name: '4G',
     technology: NetworkTechnology.lte,
     position: MobilityPoint(250.0, 250.0),
     coverageRadiusM: 1000.0, // Menjangkau seluruh area (umbrella coverage)
@@ -73,8 +73,8 @@ final List<BaseStationNode> defaultSimulationBaseStations = [
     berMax: 1e-3,
   ),
   const BaseStationNode(
-    id: 'nr_smallcell',
-    name: '5G NR Small Cell',
+    id: '5g_nr',
+    name: '5G',
     technology: NetworkTechnology.nr,
     position: MobilityPoint(250.0, 250.0),
     coverageRadiusM: 350.0, // Hotspot kecepatan tinggi di tengah area
@@ -88,8 +88,8 @@ final List<BaseStationNode> defaultSimulationBaseStations = [
     berMax: 1e-5,
   ),
   const BaseStationNode(
-    id: 'wifi_ap',
-    name: 'WLAN Office AP',
+    id: 'wifi',
+    name: 'Wi-Fi',
     technology: NetworkTechnology.wlan,
     position: MobilityPoint(120.0, 120.0),
     coverageRadiusM: 100.0, // Jangkauan lokal indoor/kantor
@@ -103,6 +103,64 @@ final List<BaseStationNode> defaultSimulationBaseStations = [
     berMax: 1e-4,
   ),
 ];
+
+/// Representasi zona rintangan fisik (gedung beton / rintangan arsitektural)
+/// yang menyebabkan redaman Non-Line-of-Sight (NLoS) signifikan terutama pada sinyal 5G berfrekuensi tinggi.
+class ObstacleZone {
+  final String id;
+  final String name;
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+  final double attenuation5gDb;
+  final double attenuation4gDb;
+
+  const ObstacleZone({
+    required this.id,
+    required this.name,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.attenuation5gDb = 24.0, // Redaman drastis 5G saat terhalang gedung (NLoS)
+    this.attenuation4gDb = 5.0,  // Redaman penetrasi ringan pada 4G (gelombang lebih panjang)
+  });
+
+  /// Memeriksa apakah suatu titik koordinat berada di dalam area rintangan ini.
+  bool contains(MobilityPoint p) {
+    return p.x >= x && p.x <= (x + width) && p.y >= y && p.y <= (y + height);
+  }
+}
+
+/// Daftar rintangan gedung beton default pada area simulasi 500m x 500m (Wilayah Tenggara).
+final List<ObstacleZone> defaultSimulationObstacles = [
+  const ObstacleZone(
+    id: 'building_complex_se',
+    name: 'Gedung Beton (NLoS)',
+    x: 340.0,
+    y: 320.0,
+    width: 90.0,
+    height: 90.0,
+    attenuation5gDb: 24.0,
+    attenuation4gDb: 5.0,
+  ),
+];
+
+/// Preset skenario demonstrasi cepat untuk menguji kondisi optimal tiap teknologi (Wi-Fi, 4G, 5G).
+enum SimulationPresetScenario {
+  /// Skenario Wi-Fi Terbaik: Pengguna di dalam jangkauan optimal AP (120, 120).
+  wifiOptimal,
+
+  /// Skenario 5G Terbaik (LoS): Pengguna di ruang terbuka Line-of-Sight langsung ke tower.
+  fiveGLineOfSight,
+
+  /// Skenario 4G Terbaik (Obstacle): Pengguna di dalam zona gedung beton di mana 5G teredam masif.
+  fourGObstacle,
+
+  /// Skenario Sirkuit Dinamis: Mobilitas alami memutar melewati ketiga zona secara berulang.
+  circuitLoop,
+}
 
 /// Kontrak abstrak penyedia data jaringan (Network Data Provider).
 ///

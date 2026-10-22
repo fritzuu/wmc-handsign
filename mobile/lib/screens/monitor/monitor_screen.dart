@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_recommendation_card.dart';
+import '../../widgets/simulation_map_card.dart';
 
 /// Screen 6 — Cockpit Monitor Simulasi (Real-Time Playback & Sinyal RF Monokrom)
 class MonitorScreen extends StatelessWidget {
@@ -20,9 +21,9 @@ class MonitorScreen extends StatelessWidget {
           children: [
             _PlaybackControlsCard(),
             SizedBox(height: 14),
-            AppRecommendationCard(),
+            SimulationMapCard(),
             SizedBox(height: 14),
-            _MobilityPositionQuickCard(),
+            AppRecommendationCard(),
             SizedBox(height: 14),
             _LiveDecisionBannerPlaceholder(),
             SizedBox(height: 14),
@@ -213,97 +214,6 @@ class _PlaybackControlsCard extends StatelessWidget {
   }
 }
 
-/// Kartu Cepat Posisi & Kecepatan Pengguna (Monokrom Modern)
-class _MobilityPositionQuickCard extends StatelessWidget {
-  const _MobilityPositionQuickCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final pos = context.select<SimulationController, String>(
-      (c) => '(${c.userPosition.x.toStringAsFixed(1)}, ${c.userPosition.y.toStringAsFixed(1)}) m',
-    );
-    final speed = context.select<SimulationController, String>(
-      (c) => '${c.velocityMps.toStringAsFixed(2)} m/s',
-    );
-    final isMoving = context.select<SimulationController, bool>(
-      (c) => c.mobilityState.isMoving,
-    );
-    final isDark = context.isDark;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        side: BorderSide(color: context.borderColor, width: 1.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.near_me_outlined, color: context.textPrimaryColor, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Posisi & Mobilitas Pengguna',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimaryColor,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1F1F1F) : AppTheme.surfaceBackground,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: context.borderColor),
-                  ),
-                  child: Text(
-                    isMoving ? 'MOVING' : 'PAUSED',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Divider(height: 18, color: context.borderColor),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Koordinat (X, Y)', style: TextStyle(fontSize: 10, color: context.textSecondaryColor)),
-                      const SizedBox(height: 2),
-                      Text(pos, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimaryColor)),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Kecepatan Efektif', style: TextStyle(fontSize: 10, color: context.textSecondaryColor)),
-                      const SizedBox(height: 2),
-                      Text(speed, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: context.textPrimaryColor)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Banner Keputusan Handover Live (High-Contrast Monochrome Banner)
 class _LiveDecisionBannerPlaceholder extends StatelessWidget {
@@ -311,9 +221,10 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeId = context.select<SimulationController, String>((c) => c.activeNetworkId);
+    final activeDisplayName = context.select<SimulationController, String>((c) => c.activeNetworkDisplayName);
     final isUnavailable = context.select<SimulationController, bool>((c) => c.isActiveNetworkUnavailable);
     final isRecommended = context.select<SimulationController, bool>((c) => c.isHandoverRecommended);
+    final targetDisplayName = context.select<SimulationController, String?>((c) => c.recommendedTargetDisplayName);
     final targetId = context.select<SimulationController, String?>((c) => c.recommendedTargetId);
     final qos = context.select<SimulationController, double?>((c) => c.latestDecision?.qosFactor);
     final hf = context.select<SimulationController, double?>((c) => c.latestDecision?.handoverFactor);
@@ -327,11 +238,11 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
         : (isRecommended ? 'REKOMENDASI HANDOVER' : 'KEPUTUSAN SAAT INI (ADVISORY)');
 
     final String mainTitle = isUnavailable
-        ? (targetId != null ? 'Terputus ➔ Rekomendasi: $targetId' : 'Koneksi Hilang: $activeId')
-        : (isRecommended ? 'Pindah ke $targetId' : 'Koneksi Stabil: $activeId');
+        ? (targetDisplayName != null ? 'Terputus ➔ Rekomendasi: $targetDisplayName' : 'Koneksi Hilang: $activeDisplayName')
+        : (isRecommended ? 'Pindah ke $targetDisplayName' : 'Koneksi Stabil: $activeDisplayName');
 
     final String subText = isUnavailable
-        ? 'Jaringan aktif $activeId tidak terjangkau. Disarankan segera beralih ke jaringan cadangan.'
+        ? 'Jaringan aktif $activeDisplayName tidak terjangkau. Disarankan segera beralih ke jaringan cadangan.'
         : (isRecommended
             ? 'HF (${hf?.toStringAsFixed(2)}) > Ambang (${threshold.toStringAsFixed(2)}) · Algoritma merekomendasikan target terbaik.'
             : 'QoS: ${qos != null ? qos.toStringAsFixed(2) : '-'} · HF: ${hf != null ? hf.toStringAsFixed(2) : '-'} (Ambang: ${threshold.toStringAsFixed(2)}) · Sinyal mencukupi.');
@@ -377,7 +288,7 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
                     ),
                     onPressed: () => context.read<SimulationController>().acceptHandover(),
                     child: Text(
-                      isUnavailable ? 'Beralih ke $targetId' : 'Terima Handover',
+                      isUnavailable ? 'Beralih ke $targetDisplayName' : 'Terima Handover',
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -467,7 +378,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Kondisi Sinyal Kanal (4G, 5G, WLAN)',
+          'Kondisi Sinyal Kanal (4G, 5G, Wi-Fi)',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
@@ -507,7 +418,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '${s.id} (${s.technology.name.toUpperCase()})',
+                        s.displayName,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
