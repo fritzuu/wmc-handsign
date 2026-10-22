@@ -6,6 +6,8 @@ import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
+import 'widgets/phone_device_frame.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final themeController = ThemeController();
@@ -39,6 +41,9 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
             routerConfig: appRouter,
+            builder: (context, child) {
+              return PhoneDeviceFrame(child: child ?? const SizedBox());
+            },
           );
         },
       ),
