@@ -93,6 +93,42 @@ class AppProfile {
       customThreshold: customThreshold ?? this.customThreshold,
     );
   }
+
+  /// Rujukan standar internasional telekomunikasi resmi (3GPP / ITU-T)
+  String get standardReference {
+    switch (id) {
+      case 'youtube':
+        return '3GPP TS 23.501 (5QI 4) & ITU-T G.1010 (Streaming)';
+      case 'mobile_legends':
+        return '3GPP TS 23.501 (5QI 3) & ITU-T G.1010 (Gaming)';
+      case 'whatsapp_call':
+        return 'ITU-T G.114 / G.107 & 3GPP TS 23.501 (5QI 1)';
+      case 'cloud_download':
+        return '3GPP TS 23.501 (5QI 9) & ITU-T G.1010 (Bulk Transfer)';
+      case 'social_media':
+        return '3GPP TS 23.501 (5QI 8) & ITU-T G.1010 (Interactive Data)';
+      default:
+        return 'Kustom Pengguna / ITU-T G.1010 General';
+    }
+  }
+
+  /// Penjelasan ilmiah mengapa profil aplikasi ini memiliki spesifikasi SLA unik
+  String get technicalRationale {
+    switch (id) {
+      case 'youtube':
+        return 'Memakai protokol TCP dengan buffer adaptif. Latensi wajar (200-350ms) masih ditoleransi karena adanya video pre-fetch buffer, namun mutlak membutuhkan throughput stabil (min 5.0 Mbps untuk 1080p, 25 Mbps untuk 4K) agar tidak terjadi buffering stuttering.';
+      case 'mobile_legends':
+        return 'Menggunakan transmisi UDP real-time sinkron dua arah. Throughput yang dibutuhkan relatif kecil (~1-5 Mbps), namun latensi di atas 60ms langsung memicu delay input skill dan desinkronisasi karakter (lag spike). Packet loss harus sangat minim (< 10⁻⁵).';
+      case 'whatsapp_call':
+        return 'Komunikasi suara & video dua arah manusia (ITU-T G.114). Delay transmisi melebihi 150ms menyebabkan tabrakan bicara (talker collision). Sangat sensitif terhadap jitter dan packet drop yang membuat suara pecah atau terputus.';
+      case 'cloud_download':
+        return 'Transfer berkas asinkron (Background). Sangat toleran terhadap delay tinggi (hingga 800ms), namun membutuhkan bandwidth sebesar mungkin (hingga 100 Mbps) untuk meminimalkan durasi unduh berkas.';
+      case 'social_media':
+        return 'Trafik interaktif campuran (teks, gambar, video singkat). Memerlukan kompromi latensi yang wajar (<200ms) untuk responsivitas interaksi feed dan bandwidth sedang (~15 Mbps) untuk preload aset media.';
+      default:
+        return 'Parameter kustom dapat disesuaikan untuk eksperimen skenario trafik khusus.';
+    }
+  }
 }
 
 /// Katalog bawaan profil aplikasi yang siap pakai.
