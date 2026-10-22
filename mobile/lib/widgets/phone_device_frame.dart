@@ -30,16 +30,28 @@ class _PhoneDeviceFrameState extends State<PhoneDeviceFrame> {
             defaultTargetPlatform == TargetPlatform.windows ||
             defaultTargetPlatform == TargetPlatform.linux);
 
-    final shouldShowFrame = _isFrameEnabled &&
-        (isDesktopPlatform || kIsWeb) &&
+    final isWideDesktop = (isDesktopPlatform || kIsWeb) &&
         screenSize.width > 550 &&
         screenSize.height > 650;
 
-    if (!shouldShowFrame) {
+    // Jika pada smartphone fisik sungguhan (layar sempit), jangan tampilkan frame/toggle
+    if (!isWideDesktop) {
       return widget.child;
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Jika pengguna menonaktifkan frame di desktop, tampilkan aplikasi layar penuh
+    // NAMUN tombol saklar tetap melayang di pojok kanan atas agar bisa diaktifkan kembali
+    if (!_isFrameEnabled) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          widget.child,
+          _buildToggleBar(isDark),
+        ],
+      );
+    }
 
     // Dimensi smartphone modern (Rasio ~19.5:9, misal iPhone 15 Pro)
     const phoneWidth = 393.0;
@@ -57,57 +69,7 @@ class _PhoneDeviceFrameState extends State<PhoneDeviceFrame> {
       body: Stack(
         children: [
           // 1. Tombol Kontrol Mengambang di Pojok Atas Layar Desktop
-          Positioned(
-            top: 14,
-            right: 18,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.black.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.12)
-                        : Colors.black.withOpacity(0.1),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.smartphone_rounded,
-                      size: 16,
-                      color: isDark ? Colors.white70 : Colors.black87,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Bingkai HP',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Switch.adaptive(
-                      value: _isFrameEnabled,
-                      activeColor: AppTheme.accentBlue,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      onChanged: (val) {
-                        setState(() {
-                          _isFrameEnabled = val;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _buildToggleBar(isDark),
 
           // 2. Chassis Smartphone di Tengah Layar
           Center(
@@ -276,6 +238,71 @@ class _PhoneDeviceFrameState extends State<PhoneDeviceFrame> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildToggleBar(bool isDark) {
+    return Positioned(
+      top: 14,
+      right: 18,
+      child: SafeArea(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1E2228).withOpacity(0.92)
+                  : Colors.white.withOpacity(0.94),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.15)
+                    : Colors.black.withOpacity(0.12),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.18),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isFrameEnabled ? Icons.smartphone_rounded : Icons.desktop_windows_rounded,
+                  size: 16,
+                  color: _isFrameEnabled
+                      ? AppTheme.accentBlue
+                      : (isDark ? Colors.white70 : Colors.black54),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isFrameEnabled ? 'Bingkai HP (Aktif)' : 'Mode Layar Penuh',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Switch.adaptive(
+                  value: _isFrameEnabled,
+                  activeColor: AppTheme.accentBlue,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (val) {
+                    setState(() {
+                      _isFrameEnabled = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
