@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "name": "Mobile (Flutter)",
+      "path": "mobile"
+    },
+    {
+      "name": "Simulator (Python)",
+      "path": "simulator"
+    },
+    {
+      "name": "Docs & PRD",
+      "path": "docs"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.DS_Store": true
+    }
+  }
+}

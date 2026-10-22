@@ -7,6 +7,10 @@ hasil yang konsisten.
 Dijalankan dengan: python verify_hybrid_generator.py
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import math
 import random
 

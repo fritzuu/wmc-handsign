@@ -56,3 +56,7 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 
+# Graphify
+graphify-out/
+
+

@@ -484,7 +484,7 @@ void testRealisticWalkScenario() {
   final gen = HybridProfileGenerator.seeded(42);
 
   print('\n  Simulasi: Berjalan dari dekat WiFi ke jauh (RSS menurun)');
-  print('  ${'RSS(dBm)':>10} ${'Quality':>10} ${'Rate(Mbps)':>12} ${'Delay(ms)':>10} ${'BER':>12} ${'Status':>8}');
+  print('  ${'RSS(dBm)'.padLeft(10)} ${'Quality'.padLeft(10)} ${'Rate(Mbps)'.padLeft(12)} ${'Delay(ms)'.padLeft(10)} ${'BER'.padLeft(12)} ${'Status'.padLeft(8)}');
   print('  ${'-' * 10} ${'-' * 10} ${'-' * 12} ${'-' * 10} ${'-' * 12} ${'-' * 8}');
 
   double prevRate = double.infinity;

@@ -4,6 +4,10 @@ Menampilkan pergerakan pengguna, pergantian waypoint, jeda (pause),
 dan variasi kecepatan pada setiap detik simulasi.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from wmc_simulator.mobility import (
     MobilityPoint,
     RandomWaypointConfig,

@@ -4,7 +4,10 @@ Mengevaluasi snapshot sintetis dan skenario multi-timestep heterogen (4G, 5G, WL
 Dijalankan dengan: python demo_topsis_baseline.py
 """
 
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from wmc_simulator.io import load_snapshot
 from wmc_simulator.baseline import SingleTopsisUtilityFunction, run_baseline_topsis_scenario
 from wmc_simulator.network import create_default_scenario
@@ -19,7 +22,10 @@ def main():
     engine = SingleTopsisUtilityFunction()
 
     # 1. Evaluasi pada snapshot contoh (examples/sample_snapshot.json)
-    sample_path = Path(__file__).parent / "examples" / "sample_snapshot.json"
+    sim_root = Path(__file__).resolve().parent.parent
+    sample_path = sim_root / "examples" / "sample_snapshot.json"
+    if not sample_path.exists():
+        sample_path = Path(__file__).resolve().parent / "examples" / "sample_snapshot.json"
     print(f"\n[1] Evaluasi Snapshot Contoh: {sample_path.name}")
     print("-" * 76)
     snapshot = load_snapshot(str(sample_path))

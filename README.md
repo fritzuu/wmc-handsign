@@ -1,129 +1,161 @@
 # WMC Handsign
 
-Aplikasi Flutter untuk rekomendasi vertical handover WLAN, 4G, dan 5G berdasarkan kelas trafik. Aplikasi memberi rekomendasi; koneksi aktif tetap ditentukan oleh sistem operasi.
+Monorepo riset dan aplikasi rekomendasi vertical handover (VHO) WLAN, 4G, dan 5G berdasarkan kelas trafik dan preferensi pengguna. Aplikasi memberi rekomendasi handover; koneksi aktif tetap dikontrol oleh sistem operasi.
 
-## Progress
+---
 
-| Bagian | Status |
-| --- | --- |
-| Model data, validasi dan generator jaringan Python | Tersedia |
-| Mobilitas Random Waypoint Python dan Dart | Tersedia |
-| UI Flutter | Monitor mobilitas tersedia |
-| Core Dart: QoS, Fuzzy HF, TOPSIS | Tersedia di `lib/core/handover/` |
-| Pembanding TOPSIS langsung dan RSS-only | Tersedia dalam hasil core |
-| Hysteresis dan dwell time | Tersedia sebagai modul opsional |
-| Sensor Android, generator hybrid Dart, filter EMA | Belum terhubung ke core |
-| Konfigurasi eksperimen, Live Monitor, logger, metrik, ekspor | Belum terintegrasi |
+## Struktur Repositori
 
-Core belum dipasang ke `lib/main.dart`. Folder algoritma Python masih berupa placeholder; implementasi keputusan baru ada di Dart.
+Proyek ini telah dirapikan ke dalam 3 modul utama:
 
-## Menjalankan
-
-Dengan Flutter SDK:
-
-```sh
-flutter pub get
-flutter test test/core/handover_test.dart
-flutter run
+```text
+wmc-handsign/
+├── mobile/                      # Aplikasi Flutter (Android, iOS, Web, Desktop)
+│   ├── android/                 # Konfigurasi platform Android & sensor native
+│   ├── ios/, web/, windows/     # Platform target lainnya
+│   ├── lib/                     # Kode sumber aplikasi Flutter & engine core Dart
+│   │   ├── core/                # Core VHO engine (FIS Mamdani, TOPSIS, Stabilizer)
+│   │   ├── router/              # Routing & navigasi antarmuka
+│   │   ├── screens/             # Layar UI (Home, Monitor, Logs, Results, Settings)
+│   │   └── theme/               # Tema & styling monochrome
+│   ├── test/                    # Pengujian unit & widget Flutter (70 test)
+│   ├── test_dart/               # Pengujian standalone Dart tanpa Flutter SDK
+│   ├── tool/                    # Skrip pengembang & demo logika core
+│   └── pubspec.yaml             # Manifest dependensi Flutter
+│
+├── simulator/                   # Paket simulasi Python & benchmark baseline
+│   ├── wmc_simulator/           # Library simulator (network, mobility, baseline, topsis)
+│   ├── tests/                   # Test suite Python unittest (62 test)
+│   ├── scripts/                 # Skrip demo interaktif & verifikasi Python ↔ Dart
+│   │   ├── demo_*.py            # Demo generator, mobility, topsis
+│   │   └── verify_*.py          # Verifikasi kesetaraan algoritma Dart & Python
+│   ├── examples/                # Contoh dataset & snapshot sintetis
+│   └── pyproject.toml           # Konfigurasi build paket Python
+│
+├── docs/                        # Spesifikasi teknis, dokumen PRD, dan panduan desain
+│   ├── wireframe-prompts-prd.md # Spesifikasi PRD wireframe & prompt UI
+│   ├── core-logic.md            # Rekonstruksi logika FIS Mamdani & TOPSIS
+│   ├── spesifikasi-parameter-qos.md # Kontrak parameter QoS (4G, 5G, WLAN)
+│   ├── baseline-single-topsis.md    # Formulasi baseline Single TOPSIS Utility
+│   └── generator-profil-jaringan.md # Pemodelan generator profil heterogen
+│
+├── wmc-handsign.code-workspace  # Multi-root workspace untuk VS Code
+└── README.md                    # Dokumentasi utama repositori
 ```
 
-Core hanya memakai pustaka standar Dart. Tes tanpa Flutter:
+---
+
+## Panduan Menjalankan
+
+### 1. Aplikasi Mobile (Flutter)
+
+Masuk ke folder `mobile/`:
 
 ```sh
+cd mobile
+flutter pub get
+```
+
+Menjalankan pengujian:
+```sh
+flutter test
+```
+
+Menjalankan pengujian standalone Dart (tanpa runtime Flutter):
+```sh
 dart test_dart/test_core_logic.dart
+dart test_dart/test_hybrid_generator.dart
+dart test_dart/test_random_waypoint_standalone.dart
+dart test_dart/test_topsis_utility_standalone.dart
 dart tool/demo_core_logic.dart
 dart analyze lib/core/handover
 ```
 
-Tes standalone mengimpor kode produksi dan memakai kasus yang sama dengan tes Flutter, tanpa menyalin algoritma. Demo memakai data sintetis, bukan hasil pengukuran HP.
-
-Simulator Python lama:
-
+Menjalankan aplikasi ke emulator atau perangkat terhubung:
 ```sh
-python -m wmc_simulator --input examples/sample_snapshot.json
-python -m unittest discover -s tests -v
+flutter run
 ```
 
-CLI Python hanya memvalidasi input. `handover_decision: null` pada laporan tersebut tidak menunjukkan status core Dart.
+### 2. Simulator Python
 
-## Alur core
+Masuk ke folder `simulator/`:
+
+```sh
+cd simulator
+```
+
+Menjalankan seluruh pengujian unit Python:
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+Menjalankan CLI simulator:
+```sh
+python3 -m wmc_simulator --input examples/sample_snapshot.json
+```
+
+Menjalankan skrip demo dan verifikasi:
+```sh
+python3 scripts/demo_generator.py
+python3 scripts/demo_topsis_baseline.py
+python3 scripts/demo_mobility.py
+python3 scripts/verify_hybrid_generator.py
+python3 scripts/verify_random_waypoint.py
+python3 scripts/verify_topsis_utility.py
+```
+
+---
+
+## Status Komponen
+
+| Komponen | Lokasi | Status |
+| --- | --- | --- |
+| Model data, validasi, dan generator jaringan Python | `simulator/wmc_simulator/` | Tersedia |
+| Mobilitas Random Waypoint (Python & Dart) | `simulator/` & `mobile/` | Tersedia |
+| Core Dart: FIS QoS, FIS HF, TOPSIS | `mobile/lib/core/handover/` | Tersedia |
+| Baseline TOPSIS langsung & RSS-only | `mobile/lib/core/` | Tersedia |
+| Hysteresis dan Dwell Time stabilizer | `mobile/lib/core/handover/` | Tersedia |
+| UI Flutter Multi-Tab (Monitor, Logs, Results, Settings) | `mobile/lib/screens/` | Tersedia |
+| Sensor Android & generator hybrid live | `mobile/` | Dalam tahap integrasi |
+
+---
+
+## Alur Logika Rekomendasi (Core VHO)
 
 ```text
 Snapshot + kelas trafik + kecepatan + ID jaringan aktif OS
-  -> validasi
+  -> validasi input
   -> FIS 1: data rate, delay, BER -> QoS Factor
-  -> FIS 2: QoS, RSS ternormalisasi, kecepatan -> HF
+  -> FIS 2: QoS, RSS ternormalisasi, kecepatan -> Handover Factor (HF)
   -> HF > threshold: TOPSIS; selain itu tetap
-  -> terbaik = jaringan aktif: tetap
-  -> terbaik berbeda: rekomendasi pindah
+  -> terbaik = jaringan aktif: tetap (STAY)
+  -> terbaik berbeda: rekomendasi pindah (SWITCH)
   -> opsional: hysteresis + dwell time
   -> hasil untuk UI dan logging
 ```
 
 TOPSIS langsung dihitung setiap tick untuk pembanding. `ranking` Fuzzy-TOPSIS kosong bila HF tidak melewati threshold; `baselineTopsisRanking` tetap tersedia. Jaringan aktif ikut ranking. Seri mempertahankan jaringan aktif, lalu diurutkan berdasarkan ID.
 
-Input kosong atau jaringan aktif hilang/tidak tersedia menghasilkan `insufficientData`. Nilai tidak finite, kecepatan negatif, BER di luar 0–1, dan ID duplikat ditolak. Layer sensor menangani izin ditolak, koneksi terputus, dan data scan kedaluwarsa sebelum evaluasi.
+Input kosong atau jaringan aktif hilang/tidak tersedia menghasilkan `insufficientData`. Nilai tidak finite, kecepatan negatif, BER di luar 0–1, dan ID duplikat ditolak.
 
-## Integrasi Flutter
+---
 
-```dart
-import 'package:project_handsign/core/handover/handover.dart';
+## Kontrak NetworkSnapshot
 
-final engine = HandoverDecisionEngine();
-final stabilizer = RecommendationStabilizer();
+| Field | Satuan / Tipe | Keterangan |
+| --- | --- | --- |
+| `id` | `String` | ID kandidat stabil (misal: BSSID atau cell ID) |
+| `technology` | `NetworkTechnology` | `wlan`, `lte`, `nr` |
+| `rssDbm` | `double` (dBm) | Sinyal mentah dalam dBm |
+| `dataRateMbps` | `double` (Mbps) | Throughput / bandwidth |
+| `delayMs` | `double` (ms) | RTT / Latensi |
+| `ber` | `double` (rasio 0–1) | Bit Error Rate (`0.01%` = `0.0001`) |
+| `available` | `bool` | Status ketersediaan kandidat |
+| `parameterSource` | `ParameterSource` | `estimated`, `measured`, `synthetic` |
 
-final raw = engine.evaluate(
-  trafficClass: TrafficClass.conversational,
-  velocityMps: velocityMps,
-  currentNetworkId: activeNetworkId,
-  networks: snapshots,
-);
-final recommendation = stabilizer.apply(raw, elapsed: stopwatch.elapsed);
-```
+---
 
-Buat engine dan stabilizer sekali per eksperimen. Kecepatan berasal dari input manual/controller mobilitas. ID jaringan aktif berasal dari OS, bukan target rekomendasi sebelumnya. Panggil `reset()` pada stabilizer saat eksperimen baru atau konfigurasi berubah. Dwell memakai waktu monoton (`Stopwatch`), bukan jam perangkat. Putusnya aliran sensor harus membatalkan pending dwell melalui `reset()` atau hasil insufficientData.
+## Referensi Ilmiah
 
-`NetworkSnapshot` membutuhkan:
-
-| Field | Satuan / isi |
-| --- | --- |
-| `id` | ID kandidat stabil, misalnya BSSID atau identitas seluler yang konsisten |
-| `technology` | `NetworkTechnology.wlan`, `.lte`, `.nr` |
-| `rssDbm` | Sinyal dBm; metrik seluler dan rentangnya harus disepakati |
-| `dataRateMbps` | Mbps |
-| `delayMs` | ms |
-| `ber` | Rasio 0–1; `0.01%` = `0.0001` |
-| `available` | Kandidat tersedia dan datanya masih layak |
-| `parameterSource` | `estimated`, `measured`, `synthetic` untuk parameter QoS |
-
-Generator hybrid FR-03 menghasilkan parameter QoS sebelum membuat snapshot. Gunakan rentang RSS dari konfigurasi yang sama dengan core. EMA dilakukan di layer sinyal; simpan RSS mentah terpisah untuk log. Estimasi QoS tidak boleh diberi label sebagai pengukuran RTT/throughput.
-
-Hasil memuat QoS, HF, threshold, keputusan, alasan, target, ranking, kedua pembanding, dan snapshot input. `result.toJson()` siap digabung dengan timestamp, RSS mentah, hasil probe, serta metadata eksperimen. Core belum menyimpan log/berkas otomatis.
-
-## Referensi dan adaptasi
-
-Referensi utama: Ndegwa et al. (2023), *User Preference-Based Heterogeneous Network Management System for Vertical Handover*, [DOI 10.1155/2023/5551773](https://doi.org/10.1155/2023/5551773).
-
-Paper memakai dua FIS Mamdani dengan Gaussian membership. Default threshold `0.7` berlaku pada semua kelas, dengan pembandingan strict `>`. Threshold per kelas dapat dikonfigurasi sesuai rancangan PRD.
-
-PDF tidak menyediakan parameter Gaussian, rule base lengkap, maupun pengaturan defuzzifikasi numerik. Implementasi memakai rekonstruksi yang dijelaskan di [docs/core-logic.md](docs/core-logic.md); hasil tidak diklaim identik dengan MATLAB penulis. Contoh aturan QoS dan HF yang tertulis pada paper dipertahankan.
-
-Output Mamdani dikalibrasi menjadi permukaan monoton agar QoS/RSS yang membaik tidak menaikkan HF. Kalibrasi dan interpolasi ini merupakan adaptasi tambahan; output produksi berbeda dari centroid mentah. Tes menyapu domain empat kelas QoS dan HF serta kasus threshold hasil audit. Gunakan versi algoritma yang sama untuk seluruh run komparasi; hasil dari versi sebelumnya perlu dihitung ulang.
-
-TOPSIS memakai data rate (benefit), delay dan BER (cost), sesuai PRD v2. Bobot tiga kolom Tabel 2 AHP dinormalisasi ulang. Kode menggunakan bobot tabel, bukan menghitung AHP dari pairwise matrix. Paper aslinya memakai tujuh kriteria.
-
-Dokumen belum seragam mengenai pembanding:
-
-- Timeline lama: TOPSIS utility function.
-- PRD Handsign v2, dataflow terbaru, prompt wireframe: RSS-only.
-- Paper: pembanding TOPSIS utility function-based dari penelitian lain.
-
-Core menyediakan **TOPSIS langsung** untuk perbandingan dengan Fuzzy-TOPSIS dan **RSS-only ternormalisasi** untuk PRD v2. TOPSIS langsung ini adalah baseline operasional proyek, bukan reproduksi utility function penelitian yang dirujuk penulis. Gunakan input, bobot, kandidat, dan interval yang sama untuk perbandingan. Pisahkan raw Fuzzy-TOPSIS dari versi dengan stabilisasi agar efek dwell tidak dianggap sebagai efek Fuzzy.
-
-PRD umum mata kuliah berisi pilihan topik awal. Presentasi Pekan 3 dan `docs/framework-pekan-3.md` adalah catatan historis fondasi Python. Kebutuhan aplikasi mengikuti PRD Handsign v2 dan dataflow Handsign.
-
-## Verifikasi dan batas hasil
-
-Tes core mencakup Gaussian/centroid, empat kelas QoS, arah perubahan kualitas, threshold, TOPSIS dan invariansi satuan, data invalid, kandidat tidak tersedia, tie, serta hysteresis/dwell. Tes widget counter bawaan di `test/widget_test.dart` masih perlu disesuaikan oleh pekerjaan UI.
-
-Belum ada hasil walk test atau klaim metode lebih unggul. Logger/evaluator perlu mendefinisikan event perubahan rekomendasi, ping-pong, unnecessary recommendation, dan denominator secara konsisten. Karena tidak mengeksekusi handover, aplikasi tidak mengukur failure rate fisik. Probe RTT/throughput dan koneksi OS dipakai untuk validasi independen, bukan mengganti input estimasi secara diam-diam.
+- **Referensi Utama**: Ndegwa et al. (2023), *User Preference-Based Heterogeneous Network Management System for Vertical Handover*, [DOI 10.1155/2023/5551773](https://doi.org/10.1155/2023/5551773).
+- **Detail Implementasi & Adaptasi**: Silakan baca dokumen lengkap di [`docs/core-logic.md`](docs/core-logic.md) dan [`docs/spesifikasi-parameter-qos.md`](docs/spesifikasi-parameter-qos.md).

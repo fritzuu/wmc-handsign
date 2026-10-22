@@ -10,6 +10,10 @@ Menampilkan:
 Dijalankan dengan: python demo_heterogeneous_generator.py
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import json
 from wmc_simulator.baseline.topsis_utility import (
     SingleTopsisUtilityFunction,

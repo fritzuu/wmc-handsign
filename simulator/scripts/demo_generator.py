@@ -1,5 +1,9 @@
 """Demo untuk mengecek generator profil jaringan heterogen."""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from wmc_simulator.network import (
     NetworkNode,
     generate_scenario_snapshots,
