@@ -205,5 +205,32 @@ void main() {
       expect(controller.mobilityState.position.y, equals(100.0));
       expect(controller.isRunning, isFalse);
     });
+
+    test('11. wifiDwell menjaga waypoint tetap berada di dalam Coworking Cafe Hub', () {
+      final gen = RandomWaypointGenerator();
+      gen.setPattern(MobilityPattern.wifiDwell);
+
+      for (int i = 0; i < 50; i++) {
+        final state = gen.step(2.0);
+        final distToWifi = state.currentWaypoint.distanceTo(const MobilityPoint(120.0, 120.0));
+        // Waypoint selalu di dalam radius 45m dari AP (120, 120)
+        expect(distToWifi, lessThanOrEqualTo(45.0));
+        expect(distToWifi, greaterThanOrEqualTo(5.0));
+      }
+    });
+
+    test('12. fiveGOpenPlaza dan fourGObstacleShelter menghasilkan waypoint sesuai zona', () {
+      final gen = RandomWaypointGenerator();
+
+      gen.setPattern(MobilityPattern.fiveGOpenPlaza);
+      final p5g = gen.step(1.0).currentWaypoint;
+      expect(p5g.x, inInclusiveRange(200.0, 280.0));
+      expect(p5g.y, inInclusiveRange(190.0, 260.0));
+
+      gen.setPattern(MobilityPattern.fourGObstacleShelter);
+      final p4g = gen.step(1.0).currentWaypoint;
+      expect(p4g.x, inInclusiveRange(355.0, 415.0));
+      expect(p4g.y, inInclusiveRange(335.0, 395.0));
+    });
   });
 }

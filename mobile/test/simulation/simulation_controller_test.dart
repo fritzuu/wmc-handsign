@@ -35,8 +35,12 @@ void main() {
         elapsedSeconds: 1.0,
       );
 
-      final nearWifi = nearSnapshots.firstWhere((s) => s.id == 'wifi_ap');
-      final farWifi = farSnapshots.firstWhere((s) => s.id == 'wifi_ap');
+      final nearWifi = nearSnapshots.firstWhere(
+        (s) => s.technology == NetworkTechnology.wlan,
+      );
+      final farWifi = farSnapshots.firstWhere(
+        (s) => s.technology == NetworkTechnology.wlan,
+      );
 
       expect(nearWifi.available, isTrue);
       expect(farWifi.available, isTrue);
@@ -56,11 +60,15 @@ void main() {
         elapsedSeconds: 0.0,
       );
 
-      final wifi = snapshots.firstWhere((s) => s.id == 'wifi_ap');
+      final wifi = snapshots.firstWhere(
+        (s) => s.technology == NetworkTechnology.wlan,
+      );
       expect(wifi.available, isFalse);
 
       // 4G Macro di (250, 250) dengan radius 1000m -> tetap IN RANGE
-      final lte = snapshots.firstWhere((s) => s.id == 'lte_macro');
+      final lte = snapshots.firstWhere(
+        (s) => s.technology == NetworkTechnology.lte,
+      );
       expect(lte.available, isTrue);
     });
 
@@ -248,7 +256,7 @@ void main() {
 
     test('Link failure: Jaringan aktif di luar jangkauan memicu rekomendasi fallback darurat', () {
       final controller = SimulationController(
-        initialActiveNetworkId: 'wifi_ap', // Wi-Fi di (120,120) coverage 100m, user di (250,250) distance ~184m
+        initialActiveNetworkId: 'wifi', // Wi-Fi di (120,120) coverage 100m, user di (250,250) distance ~184m
       );
 
       // Jaringan aktif berada di luar jangkauan
@@ -271,18 +279,70 @@ void main() {
       final sNearOut = env.getSnapshots(
         userPosition: const MobilityPoint(320.0, 120.0), // distance = 200m
         elapsedSeconds: 1.0,
-      ).firstWhere((s) => s.id == 'wifi_ap');
+      ).firstWhere((s) => s.technology == NetworkTechnology.wlan);
 
       // Jarak 400m dari Wi-Fi AP
       final sFarOut = env.getSnapshots(
         userPosition: const MobilityPoint(520.0, 120.0), // distance = 400m
         elapsedSeconds: 2.0,
-      ).firstWhere((s) => s.id == 'wifi_ap');
+      ).firstWhere((s) => s.technology == NetworkTechnology.wlan);
 
       expect(sNearOut.available, isFalse);
       expect(sFarOut.available, isFalse);
       // Sinyal lebih jauh harus lebih lemah (RSS lebih kecil/negatif)
       expect(sFarOut.rssDbm, lessThan(sNearOut.rssDbm));
+    });
+
+    test('Preset Skenario: Wi-Fi Terbaik memposisikan user di dalam jangkauan AP', () {
+      final controller = SimulationController();
+      controller.applyPresetScenario(SimulationPresetScenario.wifiOptimal);
+
+      expect(controller.activePresetScenario, equals(SimulationPresetScenario.wifiOptimal));
+      expect(controller.userPosition.distanceTo(const MobilityPoint(120.0, 120.0)), lessThanOrEqualTo(5.0));
+      expect(controller.isUserInObstacleZone, isFalse);
+
+      final wifiSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.wlan);
+      expect(wifiSnap.available, isTrue);
+      expect(wifiSnap.rssDbm, greaterThan(-60.0));
+
+      // Verifikasi bahwa user tetap tinggal (dwell) di dalam area Wi-Fi selama puluhan langkah
+      for (int step = 0; step < 30; step++) {
+        controller.step(1.0);
+        final dist = controller.userPosition.distanceTo(const MobilityPoint(120.0, 120.0));
+        expect(dist, lessThanOrEqualTo(55.0), reason: 'User harus tetap di Coworking Cafe Hub');
+        final currentWifi = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.wlan);
+        expect(currentWifi.available, isTrue);
+      }
+    });
+
+    test('Preset Skenario: 5G Terbaik (LoS) memposisikan user di area terbuka dengan throughput puncak', () {
+      final controller = SimulationController();
+      controller.applyPresetScenario(SimulationPresetScenario.fiveGLineOfSight);
+
+      expect(controller.activePresetScenario, equals(SimulationPresetScenario.fiveGLineOfSight));
+      expect(controller.isUserInObstacleZone, isFalse);
+
+      final nrSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.nr);
+      expect(nrSnap.available, isTrue);
+      // Di ruang terbuka (LoS) dekat tower, 5G throughput harus sangat tinggi
+      expect(nrSnap.dataRateMbps, greaterThan(500.0));
+      expect(nrSnap.delayMs, lessThan(10.0));
+    });
+
+    test('Preset Skenario: 4G Terbaik (Obstacle) menempatkan user di gedung beton NLoS (5G teredam masif)', () {
+      final controller = SimulationController();
+      controller.applyPresetScenario(SimulationPresetScenario.fourGObstacle);
+
+      expect(controller.activePresetScenario, equals(SimulationPresetScenario.fourGObstacle));
+      expect(controller.isUserInObstacleZone, isTrue);
+
+      final nrSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.nr);
+      final lteSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.lte);
+
+      expect(nrSnap.available, isTrue);
+      expect(lteSnap.available, isTrue);
+      // 4G harus memiliki delay lebih rendah atau data rate solid dibanding 5G yang teredam NLoS
+      expect(lteSnap.dataRateMbps, greaterThan(30.0));
     });
   });
 }

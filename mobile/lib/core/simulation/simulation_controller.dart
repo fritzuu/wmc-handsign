@@ -67,11 +67,20 @@ class SimulationController extends ChangeNotifier {
     RecommendationStabilizer? stabilizer,
     AppNetworkEvaluator? appEvaluator,
     AppProfile? initialAppProfile,
-    String initialActiveNetworkId = 'lte_macro',
+    String initialActiveNetworkId = '4g_lte',
     TrafficClass initialTrafficClass = TrafficClass.streaming,
     this.maxHistoryCapacity = 1000,
     this.pingPongWindowSeconds = 5.0,
-  })  : _rwpGenerator = rwpGenerator ?? RandomWaypointGenerator(),
+  })  : _rwpGenerator = rwpGenerator ??
+            RandomWaypointGenerator(
+              config: const RandomWaypointConfig(
+                minSpeed: 2.5,
+                maxSpeed: 5.0,
+                minPauseTime: 0.5,
+                maxPauseTime: 2.0,
+                pattern: MobilityPattern.naturalCircuit,
+              ),
+            ),
         _networkProvider = networkProvider ?? SyntheticNetworkEnvironment(),
         _engine = engine ??
             HandoverDecisionEngine(configuration: defaultPracticalConfiguration),
@@ -91,6 +100,7 @@ class SimulationController extends ChangeNotifier {
   double get elapsedSeconds => _elapsedSeconds;
   bool get isRunning => _isRunning;
   String get activeNetworkId => _activeNetworkId;
+  String get activeNetworkDisplayName => formatNetworkLabel(_activeNetworkId);
   TrafficClass get trafficClass => _trafficClass;
   AppProfile get activeAppProfile => _activeAppProfile;
   AppSuitabilityReport? get currentAppReport => _currentAppReport;
@@ -100,6 +110,24 @@ class SimulationController extends ChangeNotifier {
   MobilityPoint get userPosition => _rwpGenerator.currentState.position;
   double get velocityMps => _rwpGenerator.currentState.currentSpeed;
   RandomWaypointGenerator get rwpGenerator => _rwpGenerator;
+  MobilityPattern get mobilityPattern {
+    try {
+      return _rwpGenerator.config.pattern;
+    } catch (_) {
+      return MobilityPattern.naturalCircuit;
+    }
+  }
+
+  /// Mengubah pola lintasan simulasi (naturalCircuit / uniformRandom).
+  void setMobilityPattern(MobilityPattern pattern) {
+    try {
+      if (_rwpGenerator.config.pattern == pattern) return;
+      _rwpGenerator.setPattern(pattern);
+    } catch (_) {
+      _rwpGenerator.reset();
+    }
+    notifyListeners();
+  }
 
   List<NetworkSnapshot> get snapshots => List.unmodifiable(_currentSnapshots);
   DecisionResult? get latestDecision => _latestDecision;
@@ -107,6 +135,81 @@ class SimulationController extends ChangeNotifier {
   DecisionRecord? get latestRecord => _history.isNotEmpty ? _history.last : null;
   List<DecisionRecord> get history => List.unmodifiable(_history);
   SimulationMetrics get metrics => _metrics;
+
+  /// Daftar base stations / access points dalam lingkungan simulasi.
+  List<BaseStationNode> get baseStations {
+    if (_networkProvider is SyntheticNetworkEnvironment) {
+      return (_networkProvider as SyntheticNetworkEnvironment).nodes;
+    }
+    return defaultSimulationBaseStations;
+  }
+
+  SimulationPresetScenario _activePresetScenario = SimulationPresetScenario.circuitLoop;
+
+  /// Skenario preset demonstrasi yang sedang aktif.
+  SimulationPresetScenario get activePresetScenario => _activePresetScenario;
+
+  /// Daftar zona rintangan fisik (gedung beton / obstacle) di area simulasi.
+  List<ObstacleZone> get obstacles {
+    if (_networkProvider is SyntheticNetworkEnvironment) {
+      return (_networkProvider as SyntheticNetworkEnvironment).obstacles;
+    }
+    return defaultSimulationObstacles;
+  }
+
+  /// Apakah pengguna saat ini berada di dalam zona rintangan fisik (NLoS).
+  bool get isUserInObstacleZone =>
+      obstacles.any((o) => o.contains(userPosition));
+
+  /// Menerapkan preset skenario demonstrasi untuk menguji kondisi optimal tiap teknologi.
+  void applyPresetScenario(SimulationPresetScenario scenario) {
+    _activePresetScenario = scenario;
+
+    switch (scenario) {
+      case SimulationPresetScenario.wifiOptimal:
+        // Aktifkan pola dwelling mikro di dalam area Cafe Hub (AP 120, 120)
+        // Pengguna beraktivitas di dalam cafe tanpa kabur dari Wi-Fi
+        _rwpGenerator.setPattern(MobilityPattern.wifiDwell);
+        _rwpGenerator.setPosition(
+          const MobilityPoint(120.0, 120.0),
+          newWaypoint: const MobilityPoint(126.0, 128.0),
+          speed: 1.1,
+        );
+        _activeNetworkId = 'wifi';
+        break;
+
+      case SimulationPresetScenario.fiveGLineOfSight:
+        // Aktifkan pola ruang terbuka Tech Plaza dengan Line-of-Sight prima
+        _rwpGenerator.setPattern(MobilityPattern.fiveGOpenPlaza);
+        _rwpGenerator.setPosition(
+          const MobilityPoint(220.0, 200.0),
+          newWaypoint: const MobilityPoint(235.0, 215.0),
+          speed: 2.2,
+        );
+        _activeNetworkId = '5g_nr';
+        break;
+
+      case SimulationPresetScenario.fourGObstacle:
+        // Aktifkan pola di dalam kompleks gedung beton NLoS (4G shelter)
+        _rwpGenerator.setPattern(MobilityPattern.fourGObstacleShelter);
+        _rwpGenerator.setPosition(
+          const MobilityPoint(385.0, 365.0),
+          newWaypoint: const MobilityPoint(395.0, 375.0),
+          speed: 1.2,
+        );
+        _activeNetworkId = '4g_lte';
+        break;
+
+      case SimulationPresetScenario.circuitLoop:
+        // Kembalikan ke sirkuit alami multi-zona 15 titik
+        _rwpGenerator.setPattern(MobilityPattern.naturalCircuit);
+        break;
+    }
+
+    _stabilizer.reset();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
 
   /// Snapshot dari jaringan aktif saat ini.
   NetworkSnapshot? get activeNetworkSnapshot =>
@@ -147,6 +250,10 @@ class SimulationController extends ChangeNotifier {
     }
     return isHandoverRecommended ? _latestDecision!.targetNetworkId : null;
   }
+
+  /// Nama ramah pengguna untuk target handover yang direkomendasikan jika ada.
+  String? get recommendedTargetDisplayName =>
+      recommendedTargetId != null ? formatNetworkLabel(recommendedTargetId) : null;
 
   int _playbackSpeed = 1;
 
@@ -357,7 +464,7 @@ class SimulationController extends ChangeNotifier {
   /// Reset simulasi ke kondisi awal.
   void reset({
     int? newSeed,
-    String initialActiveNetworkId = 'lte_macro',
+    String initialActiveNetworkId = '4g_lte',
     TrafficClass? initialTrafficClass,
   }) {
     pause();

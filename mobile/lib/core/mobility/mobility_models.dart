@@ -44,6 +44,27 @@ class MobilityPoint {
   }
 }
 
+/// Pola lintasan mobilitas pengguna dalam area simulasi.
+enum MobilityPattern {
+  /// Pola loop/circuit natural 14-node yang mengitari kampus, melintasi zona Wi-Fi Cafe Hub,
+  /// ruang terbuka 5G LoS, dan gedung beton 4G secara berkesinambungan dan natural.
+  naturalCircuit,
+
+  /// Pola dwelling mikro di dalam area Coworking Cafe Hub (Wi-Fi optimal).
+  /// Pengguna beraktivitas santai di meja kerja, lounge, dan terrace tanpa keluar dari Wi-Fi.
+  wifiDwell,
+
+  /// Pola pergerakan di koridor terbuka Tech Plaza dengan Line-of-Sight prima ke pemancar 5G.
+  fiveGOpenPlaza,
+
+  /// Pola pergerakan di dalam gedung beton tebal (NLoS) di mana sinyal 5G teredam
+  /// dan jaringan 4G menjadi konektivitas paling andal.
+  fourGObstacleShelter,
+
+  /// Pola waypoint acak murni ke seluruh area simulasi (standar RWP).
+  uniformRandom,
+}
+
 /// Konfigurasi parameter simulasi Random Waypoint Model.
 class RandomWaypointConfig {
   /// Lebar area simulasi dalam meter (sumbu X: [0, areaWidth]).
@@ -73,6 +94,9 @@ class RandomWaypointConfig {
   /// Seed acak opsional untuk reprodusibilitas eksperimen/testing.
   final int? seed;
 
+  /// Pola pergerakan mobilitas (default: naturalCircuit untuk transisi berkala Wi-Fi, 5G, 4G).
+  final MobilityPattern pattern;
+
   const RandomWaypointConfig({
     this.areaWidth = 500.0,
     this.areaHeight = 500.0,
@@ -83,6 +107,7 @@ class RandomWaypointConfig {
     this.maxPauseTime = 3.0,
     this.updateInterval = 1.0,
     this.seed,
+    this.pattern = MobilityPattern.naturalCircuit,
   })  : assert(areaWidth > 0, 'areaWidth harus lebih besar dari 0'),
         assert(areaHeight > 0, 'areaHeight harus lebih besar dari 0'),
         assert(minSpeed >= 0, 'minSpeed tidak boleh negatif'),
@@ -90,6 +115,32 @@ class RandomWaypointConfig {
         assert(minPauseTime >= 0, 'minPauseTime tidak boleh negatif'),
         assert(maxPauseTime >= minPauseTime, 'maxPauseTime harus >= minPauseTime'),
         assert(updateInterval > 0, 'updateInterval harus > 0');
+
+  RandomWaypointConfig copyWith({
+    double? areaWidth,
+    double? areaHeight,
+    MobilityPoint? initialPosition,
+    double? minSpeed,
+    double? maxSpeed,
+    double? minPauseTime,
+    double? maxPauseTime,
+    double? updateInterval,
+    int? seed,
+    MobilityPattern? pattern,
+  }) {
+    return RandomWaypointConfig(
+      areaWidth: areaWidth ?? this.areaWidth,
+      areaHeight: areaHeight ?? this.areaHeight,
+      initialPosition: initialPosition ?? this.initialPosition,
+      minSpeed: minSpeed ?? this.minSpeed,
+      maxSpeed: maxSpeed ?? this.maxSpeed,
+      minPauseTime: minPauseTime ?? this.minPauseTime,
+      maxPauseTime: maxPauseTime ?? this.maxPauseTime,
+      updateInterval: updateInterval ?? this.updateInterval,
+      seed: seed ?? this.seed,
+      pattern: pattern ?? this.pattern,
+    );
+  }
 
   /// Validasi apakah sebuah titik berada di dalam boundary area.
   bool contains(MobilityPoint point) {
