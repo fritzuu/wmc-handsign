@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/algorithm_vs_baseline_card.dart';
 import '../../widgets/app_recommendation_card.dart';
 import '../../widgets/simulation_map_card.dart';
 
@@ -24,6 +25,8 @@ class MonitorScreen extends StatelessWidget {
             SimulationMapCard(),
             SizedBox(height: 14),
             AppRecommendationCard(),
+            SizedBox(height: 14),
+            AlgorithmVsBaselineCard(),
             SizedBox(height: 14),
             _LiveDecisionBannerPlaceholder(),
             SizedBox(height: 14),
@@ -239,7 +242,7 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
 
     final String mainTitle = isUnavailable
         ? (targetDisplayName != null ? 'Terputus ➔ Rekomendasi: $targetDisplayName' : 'Koneksi Hilang: $activeDisplayName')
-        : (isRecommended ? 'Pindah ke $targetDisplayName' : 'Koneksi Stabil: $activeDisplayName');
+        : (isRecommended && targetDisplayName != null ? 'Pindah ke $targetDisplayName' : 'Koneksi Stabil: $activeDisplayName');
 
     final String subText = isUnavailable
         ? 'Jaringan aktif $activeDisplayName tidak terjangkau. Disarankan segera beralih ke jaringan cadangan.'
@@ -377,13 +380,28 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Kondisi Sinyal Kanal (4G, 5G, Wi-Fi)',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: context.textPrimaryColor,
-          ),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Text(
+              'Pilih Jaringan yang Sedang Dipakai',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: context.textPrimaryColor,
+              ),
+            ),
+            Text(
+              'Tap untuk menghubungkan',
+              style: TextStyle(
+                fontSize: 10,
+                color: context.textSecondaryColor,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         ...snapshots.map(
@@ -405,6 +423,19 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
               ),
               child: ListTile(
                 dense: true,
+                onTap: (!isActive && s.available)
+                    ? () {
+                        context.read<SimulationController>().switchActiveNetwork(s.id);
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Terhubung ke ${s.displayName}. Sistem mulai mengevaluasi kondisi jaringan.'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    : null,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 leading: Icon(
                   s.technology == NetworkTechnology.nr
@@ -463,24 +494,39 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        s.available ? 'IN RANGE' : 'OUT',
+                        s.available ? 'TERJANGKAU' : 'LUAR JANGKAUAN',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.bold,
                           color: s.available ? context.textPrimaryColor : AppTheme.errorRed,
                         ),
                       ),
                     ),
                     if (!isActive && s.available) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.link, size: 18),
-                        tooltip: 'Pilih sebagai jaringan aktif',
-                        color: context.textPrimaryColor,
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(),
-                        onPressed: () => context.read<SimulationController>().switchActiveNetwork(s.id),
+                      const SizedBox(width: 6),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white : AppTheme.darkNavy,
+                          foregroundColor: isDark ? AppTheme.pureBlack : Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        onPressed: () {
+                          context.read<SimulationController>().switchActiveNetwork(s.id);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Terhubung ke ${s.displayName}. Sistem mulai mengevaluasi kondisi jaringan.'),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Pakai', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ],

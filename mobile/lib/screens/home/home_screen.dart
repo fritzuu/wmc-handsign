@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/active_network_selector_card.dart';
 import '../../widgets/app_recommendation_card.dart';
 
 /// Screen 2 — Home Dashboard (Minimalist Black & White)
@@ -20,6 +21,8 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SimulationStatusHeroCard(),
+            SizedBox(height: 16),
+            ActiveNetworkSelectorCard(),
             SizedBox(height: 16),
             AppRecommendationCard(compact: true),
             SizedBox(height: 16),
@@ -104,7 +107,9 @@ class _SimulationStatusHeroCard extends StatelessWidget {
           Text(
             isUnavailable
                 ? 'Koneksi Terputus: $activeDisplayName'
-                : (isRecommended ? 'Rekomendasi: Pindah ke $targetDisplayName' : 'Koneksi Stabil: $activeDisplayName'),
+                : (isRecommended && targetDisplayName != null
+                    ? 'Rekomendasi: Pindah ke $targetDisplayName'
+                    : 'Koneksi Stabil: $activeDisplayName'),
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -125,6 +130,55 @@ class _SimulationStatusHeroCard extends StatelessWidget {
               height: 1.35,
             ),
           ),
+          if ((isRecommended || isUnavailable) && targetDisplayName != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.successGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.rocket_launch, size: 16, color: AppTheme.successGreen),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isUnavailable
+                          ? 'Sinyal terputus. Beralih ke $targetDisplayName sekarang.'
+                          : 'Rekomendasi: Beralih ke $targetDisplayName',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.successGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    onPressed: () => context.read<SimulationController>().acceptHandover(),
+                    child: Text(
+                      'Pindah ke $targetDisplayName',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -577,11 +631,12 @@ class _MenuActionCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    softWrap: true,
                     style: TextStyle(
                       fontSize: 10,
                       color: context.textSecondaryColor,
+                      height: 1.25,
                     ),
                   ),
                 ],
