@@ -341,8 +341,13 @@ void main() {
 
       expect(nrSnap.available, isTrue);
       expect(lteSnap.available, isTrue);
-      // 4G harus memiliki delay lebih rendah atau data rate solid dibanding 5G yang teredam NLoS
-      expect(lteSnap.dataRateMbps, greaterThan(30.0));
+      // 5G teredam parah oleh gedung beton: throughput anjlok, delay membengkak
+      expect(nrSnap.dataRateMbps, lessThan(10.0));
+      expect(nrSnap.delayMs, greaterThan(60.0));
+      // 4G memiliki penetrasi sub-2GHz superior di dalam gedung beton
+      expect(lteSnap.dataRateMbps, greaterThan(nrSnap.dataRateMbps));
+      expect(lteSnap.delayMs, lessThan(nrSnap.delayMs));
+      expect(lteSnap.rssDbm, greaterThan(nrSnap.rssDbm));
     });
 
     test('Audit Logika: Penggantian profil aplikasi dan slider tidak menambah phantom data seluler atau duplikat step history', () {
@@ -398,6 +403,61 @@ void main() {
       controller.acceptHandover();
       expect(controller.activeNetworkId, equals(fallback));
       expect(controller.isActiveNetworkUnavailable, isFalse);
+    });
+
+    test('Audit Fisika RF: ObstacleZone blocksLine mendeteksi ray blocking dan tembus gedung', () {
+      const obstacle = ObstacleZone(
+        id: 'test_bld',
+        name: 'Gedung Uji',
+        x: 100.0,
+        y: 100.0,
+        width: 50.0,
+        height: 50.0,
+      );
+
+      // Titik di dalam rintangan
+      expect(obstacle.blocksLine(const MobilityPoint(120, 120), const MobilityPoint(200, 200)), isTrue);
+      // Ray melintasi rintangan dari kiri ke kanan (50, 125) -> (200, 125)
+      expect(obstacle.blocksLine(const MobilityPoint(50, 125), const MobilityPoint(200, 125)), isTrue);
+      // Ray diagonal melintasi rintangan (50, 50) -> (200, 200)
+      expect(obstacle.blocksLine(const MobilityPoint(50, 50), const MobilityPoint(200, 200)), isTrue);
+      // Ray di luar rintangan, tidak melintas (10, 10) -> (80, 80)
+      expect(obstacle.blocksLine(const MobilityPoint(10, 10), const MobilityPoint(80, 80)), isFalse);
+      // Ray paralel di atas rintangan (50, 80) -> (200, 80)
+      expect(obstacle.blocksLine(const MobilityPoint(50, 80), const MobilityPoint(200, 80)), isFalse);
+    });
+
+    test('Audit Fisika RF: 5G teredam drastis saat terhalang gedung beton, tidak di-clamp ke batas outdoor', () {
+      final env = SyntheticNetworkEnvironment.seeded(12345);
+      // User di dalam gedung beton (385, 365)
+      final snapshotsInBuilding = env.getSnapshots(
+        userPosition: const MobilityPoint(385.0, 365.0),
+        elapsedSeconds: 0.0,
+      );
+
+      final nrIn = snapshotsInBuilding.firstWhere((s) => s.technology == NetworkTechnology.nr);
+      final lteIn = snapshotsInBuilding.firstWhere((s) => s.technology == NetworkTechnology.lte);
+
+      // 5G di dalam gedung beton harus anjlok di bawah 10 Mbps dan delay > 65 ms
+      expect(nrIn.dataRateMbps, lessThan(10.0));
+      expect(nrIn.delayMs, greaterThan(65.0));
+      expect(nrIn.ber, greaterThan(1e-4));
+
+      // 4G menembus beton lebih baik: throughput jauh di atas 5G, delay jauh di bawah 5G
+      expect(lteIn.dataRateMbps, greaterThan(nrIn.dataRateMbps));
+      expect(lteIn.delayMs, lessThan(nrIn.delayMs));
+      expect(lteIn.rssDbm, greaterThan(nrIn.rssDbm));
+
+      // User di luar gedung beton (Line of Sight 5G di 220, 200)
+      final snapshotsOutdoor = env.getSnapshots(
+        userPosition: const MobilityPoint(220.0, 200.0),
+        elapsedSeconds: 0.0,
+      );
+      final nrOutdoor = snapshotsOutdoor.firstWhere((s) => s.technology == NetworkTechnology.nr);
+
+      // 5G di outdoor Line-of-Sight harus optimal (> 50 Mbps, < 25 ms delay)
+      expect(nrOutdoor.dataRateMbps, greaterThan(100.0));
+      expect(nrOutdoor.delayMs, lessThan(25.0));
     });
   });
 }

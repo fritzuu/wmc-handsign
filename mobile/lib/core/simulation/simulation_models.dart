@@ -131,6 +131,57 @@ class ObstacleZone {
   bool contains(MobilityPoint p) {
     return p.x >= x && p.x <= (x + width) && p.y >= y && p.y <= (y + height);
   }
+
+  /// Memeriksa apakah garis pandang (Line-of-Sight) antara dua titik terhalang oleh gedung beton ini.
+  /// Mendeteksi jika titik berada di dalam gedung maupun jika sinyal harus menembus dinding gedung.
+  bool blocksLine(MobilityPoint p1, MobilityPoint p2) {
+    if (contains(p1) || contains(p2)) return true;
+
+    final xMin = x;
+    final xMax = x + width;
+    final yMin = y;
+    final yMax = y + height;
+
+    double tMin = 0.0;
+    double tMax = 1.0;
+
+    final dx = p2.x - p1.x;
+    final dy = p2.y - p1.y;
+
+    // Uji slab sumbu X
+    if (dx.abs() < 1e-9) {
+      if (p1.x < xMin || p1.x > xMax) return false;
+    } else {
+      double t1 = (xMin - p1.x) / dx;
+      double t2 = (xMax - p1.x) / dx;
+      if (t1 > t2) {
+        final tmp = t1;
+        t1 = t2;
+        t2 = tmp;
+      }
+      if (t1 > tMin) tMin = t1;
+      if (t2 < tMax) tMax = t2;
+      if (tMin > tMax) return false;
+    }
+
+    // Uji slab sumbu Y
+    if (dy.abs() < 1e-9) {
+      if (p1.y < yMin || p1.y > yMax) return false;
+    } else {
+      double t1 = (yMin - p1.y) / dy;
+      double t2 = (yMax - p1.y) / dy;
+      if (t1 > t2) {
+        final tmp = t1;
+        t1 = t2;
+        t2 = tmp;
+      }
+      if (t1 > tMin) tMin = t1;
+      if (t2 < tMax) tMax = t2;
+      if (tMin > tMax) return false;
+    }
+
+    return tMax >= 0.0 && tMin <= 1.0 && tMin <= tMax;
+  }
 }
 
 /// Daftar rintangan gedung beton default pada area simulasi 500m x 500m (Wilayah Tenggara).

@@ -76,9 +76,6 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
   }) {
     final snapshots = <NetworkSnapshot>[];
 
-    final activeObstacle =
-        obstacles.where((o) => o.contains(userPosition)).firstOrNull;
-
     for (final node in nodes) {
       final distance = max(1.0, node.distanceTo(userPosition));
       final inRange = distance <= node.coverageRadiusM;
@@ -145,35 +142,57 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
       // 4. Bit Error Rate dasar
       double ber = _lerpLog(node.berMax, node.berMin, noisyQuality);
 
-      // Efek Fisika Rintangan (Obstacle / Non-Line-of-Sight Attenuation)
-      if (activeObstacle != null) {
-        if (node.technology == NetworkTechnology.nr) {
-          // 5G: Redaman Non-Line-of-Sight masif (gelombang milimeter terhalang beton)
-          rawRss -= activeObstacle.attenuation5gDb;
-          dataRateMbps = (dataRateMbps * 0.15).clamp(node.dataRateMin, node.dataRateMax);
-          delayMs = (delayMs + 15.0).clamp(node.delayMin, node.delayMax);
-          ber = (ber * 25.0).clamp(node.berMin, node.berMax);
-        } else if (node.technology == NetworkTechnology.lte) {
-          // 4G: Redaman penetrasi ringan (gelombang sub-2GHz mampu menembus material)
-          rawRss -= activeObstacle.attenuation4gDb;
-          dataRateMbps = (dataRateMbps * 0.90).clamp(node.dataRateMin, node.dataRateMax);
-          delayMs = (delayMs + 2.0).clamp(node.delayMin, node.delayMax);
-        }
-      }
+      // Deteksi apakah rintangan menghalangi sinyal antara base station dan pengguna (NLoS)
+      final blockingObstacle = obstacles
+          .where((o) => o.blocksLine(node.position, userPosition))
+          .firstOrNull;
 
-      final rssDbm = rawRss.clamp(node.rssMin, node.rssMax);
-      dataRateMbps = dataRateMbps.clamp(node.dataRateMin, node.dataRateMax);
-      delayMs = delayMs.clamp(node.delayMin, node.delayMax);
-      ber = ber.clamp(node.berMin, node.berMax);
+      double finalRssDbm;
+      double finalDataRateMbps;
+      double finalDelayMs;
+      double finalBer;
+
+      // Efek Fisika Rintangan (Obstacle / Non-Line-of-Sight Attenuation)
+      if (blockingObstacle != null) {
+        if (node.technology == NetworkTechnology.nr) {
+          // 5G: Redaman Non-Line-of-Sight masif (gelombang milimeter / C-band terhalang gedung beton)
+          // Penetrasi beton menyebabkan sinyal anjlok drastis (24-30 dB loss),
+          // throughput ambruk ke 1.5 - 8 Mbps (tidak boleh di-clamp ke batas outdoor 50 Mbps),
+          // delay membengkak (70 - 150 ms) akibat HARQ retransmissions, dan packet error melonjak.
+          finalRssDbm = (rawRss - blockingObstacle.attenuation5gDb).clamp(-120.0, -96.0);
+          finalDataRateMbps = (dataRateMbps * 0.05).clamp(1.5, 8.0);
+          finalDelayMs = (delayMs + 70.0 + _gaussianNoise(8.0, 3.0)).clamp(65.0, 160.0);
+          finalBer = (ber * 500.0).clamp(1e-4, 0.04);
+        } else if (node.technology == NetworkTechnology.lte) {
+          // 4G: Redaman penetrasi ringan (gelombang sub-2GHz mampu menembus material beton)
+          // 4G tetap stabil dan menjadi pilihan jauh lebih unggul di dalam gedung beton
+          finalRssDbm = (rawRss - blockingObstacle.attenuation4gDb).clamp(node.rssMin, node.rssMax);
+          finalDataRateMbps = (dataRateMbps * 0.85).clamp(node.dataRateMin, node.dataRateMax);
+          finalDelayMs = (delayMs + 4.0).clamp(node.delayMin, node.delayMax);
+          finalBer = (ber * 2.0).clamp(node.berMin, node.berMax);
+        } else {
+          // Wi-Fi atau teknologi lain
+          finalRssDbm = (rawRss - 18.0).clamp(node.rssMin, node.rssMax);
+          finalDataRateMbps = (dataRateMbps * 0.25).clamp(node.dataRateMin, node.dataRateMax);
+          finalDelayMs = (delayMs + 22.0).clamp(node.delayMin, node.delayMax);
+          finalBer = (ber * 15.0).clamp(node.berMin, node.berMax);
+        }
+      } else {
+        // Kondisi Line-of-Sight normal (Outdoor / tanpa rintangan)
+        finalRssDbm = rawRss.clamp(node.rssMin, node.rssMax);
+        finalDataRateMbps = dataRateMbps.clamp(node.dataRateMin, node.dataRateMax);
+        finalDelayMs = delayMs.clamp(node.delayMin, node.delayMax);
+        finalBer = ber.clamp(node.berMin, node.berMax);
+      }
 
       snapshots.add(
         NetworkSnapshot(
           id: node.id,
           technology: node.technology,
-          rssDbm: (rssDbm * 100).round() / 100.0,
-          dataRateMbps: (dataRateMbps * 1000).round() / 1000.0,
-          delayMs: (delayMs * 100).round() / 100.0,
-          ber: ber,
+          rssDbm: (finalRssDbm * 100).round() / 100.0,
+          dataRateMbps: (finalDataRateMbps * 1000).round() / 1000.0,
+          delayMs: (finalDelayMs * 100).round() / 100.0,
+          ber: finalBer,
           available: true,
           parameterSource: ParameterSource.synthetic,
         ),
