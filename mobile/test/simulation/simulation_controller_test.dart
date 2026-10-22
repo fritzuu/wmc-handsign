@@ -344,5 +344,60 @@ void main() {
       // 4G harus memiliki delay lebih rendah atau data rate solid dibanding 5G yang teredam NLoS
       expect(lteSnap.dataRateMbps, greaterThan(30.0));
     });
+
+    test('Audit Logika: Penggantian profil aplikasi dan slider tidak menambah phantom data seluler atau duplikat step history', () {
+      final controller = SimulationController(initialActiveNetworkId: 'wifi');
+      expect(controller.stepIndex, equals(0));
+      expect(controller.history.length, equals(1));
+      final initialSavedMb = controller.cellularDataSavedMb;
+
+      // Ubah profil berkali-kali tanpa step
+      controller.selectAppProfile(AppCatalog.getById('mobile_legends'));
+      controller.selectAppProfile(AppCatalog.getById('whatsapp_call'));
+      controller.selectAppProfile(AppCatalog.getById('cloud_download'));
+      controller.setTrafficClass(TrafficClass.conversational);
+
+      // Riwayat dan kuota hemat TIDAK boleh bertambah karena waktu simulasi tidak maju
+      expect(controller.stepIndex, equals(0));
+      expect(controller.history.length, equals(1));
+      expect(controller.cellularDataSavedMb, equals(initialSavedMb));
+
+      // Saat step dieksekusi, baru kuota dan riwayat bertambah secara sah
+      controller.step(1.0);
+      expect(controller.stepIndex, equals(1));
+      expect(controller.history.length, equals(2));
+      expect(controller.cellularDataSavedMb, greaterThan(initialSavedMb));
+    });
+
+    test('Audit Logika: fallbackTargetId hanya mengembalikan jaringan yang saat ini available', () {
+      final env = SyntheticNetworkEnvironment.seeded(42);
+      // Tempatkan pengguna di luar jangkauan Wi-Fi (400, 400)
+      final rwp = RandomWaypointGenerator(
+        config: const RandomWaypointConfig(
+          initialPosition: MobilityPoint(400.0, 400.0),
+          minSpeed: 0.0,
+          maxSpeed: 0.0,
+        ),
+      );
+
+      final controller = SimulationController(
+        networkProvider: env,
+        rwpGenerator: rwp,
+        initialActiveNetworkId: 'wifi',
+      );
+
+      expect(controller.isActiveNetworkUnavailable, isTrue);
+      final fallback = controller.fallbackTargetId;
+      expect(fallback, isNotNull);
+      // Target fallback harus merupakan jaringan yang available
+      final targetSnap = controller.snapshots.firstWhere((s) => s.id == fallback);
+      expect(targetSnap.available, isTrue);
+      expect(targetSnap.id, isNot(equals('wifi')));
+
+      // Eksekusi acceptHandover harus aman dan berhasil memindahkan jaringan
+      controller.acceptHandover();
+      expect(controller.activeNetworkId, equals(fallback));
+      expect(controller.isActiveNetworkUnavailable, isFalse);
+    });
   });
 }

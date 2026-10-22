@@ -38,6 +38,9 @@ class SimulationController extends ChangeNotifier {
   final AppNetworkEvaluator _appEvaluator;
   AppSuitabilityReport? _currentAppReport;
 
+  final AppQoECalculator _qoeCalculator = const AppQoECalculator();
+  QoEEvaluationResult? _currentQoE;
+
   List<NetworkSnapshot> _currentSnapshots = const [];
   DecisionResult? _latestRawDecision;
   DecisionResult? _latestDecision;
@@ -49,6 +52,14 @@ class SimulationController extends ChangeNotifier {
   String? _lastSwitchedFromId;
   double _lastSwitchedFromTime = -100.0;
   final double pingPongWindowSeconds;
+
+  // Pelacakan komparasi: Ping-pong konvensional (RSS-only) yang berhasil dicegah
+  String? _lastRssTargetId;
+  double _lastRssTargetTime = -100.0;
+  int _preventedPingPongCount = 0;
+  int _rssHandoverCount = 0;
+  int _smartVhoHandoverCount = 0;
+  double _cellularDataSavedMb = 0.0;
 
   static final HandoverConfiguration defaultPracticalConfiguration =
       HandoverConfiguration(
@@ -105,6 +116,36 @@ class SimulationController extends ChangeNotifier {
   AppProfile get activeAppProfile => _activeAppProfile;
   AppSuitabilityReport? get currentAppReport => _currentAppReport;
   AppNetworkEvaluator get appEvaluator => _appEvaluator;
+  QoEEvaluationResult? get currentQoE => _currentQoE;
+
+  /// Jumlah ping-pong handover konvensional (RSS-only) yang berhasil dicegah
+  int get preventedPingPongCount => _preventedPingPongCount;
+
+  /// Jumlah handover yang terjadi pada metode konvensional (RSS-Only)
+  int get rssHandoverCount => _rssHandoverCount;
+
+  /// Jumlah handover yang dieksekusi pada metode Smart VHO kita
+  int get smartVhoHandoverCount => _smartVhoHandoverCount;
+
+  /// ID target jaringan yang dipilih oleh RSS-Only saat ini
+  String? get baselineRssNetworkId => _latestDecision?.baselineRssNetworkId;
+
+  /// Snapshot kandidat jaringan yang dipilih oleh RSS-Only saat ini
+  NetworkSnapshot? get baselineRssSnapshot =>
+      _currentSnapshots.where((s) => s.id == baselineRssNetworkId).firstOrNull;
+
+  /// Evaluasi QoE real-time jika menggunakan pilihan RSS-Only
+  QoEEvaluationResult? get currentRssQoE {
+    final snap = baselineRssSnapshot;
+    if (snap == null) return null;
+    return _qoeCalculator.evaluate(
+      appProfile: _activeAppProfile,
+      activeSnapshot: snap,
+    );
+  }
+
+  /// Estimasi kuota seluler yang berhasil dihemat (dalam Megabyte) saat menggunakan Wi-Fi
+  double get cellularDataSavedMb => _cellularDataSavedMb;
 
   MobilityState get mobilityState => _rwpGenerator.currentState;
   MobilityPoint get userPosition => _rwpGenerator.currentState.position;
@@ -211,6 +252,19 @@ class SimulationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Menempatkan posisi pengguna secara langsung ke koordinat tertentu (Interactive Sandbox Tap-to-Place).
+  void teleportUser(MobilityPoint targetPosition) {
+    _rwpGenerator.setPosition(
+      targetPosition,
+      newWaypoint: targetPosition,
+      speed: 0.0,
+      pause: true,
+    );
+    _stabilizer.reset();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
+
   /// Snapshot dari jaringan aktif saat ini.
   NetworkSnapshot? get activeNetworkSnapshot =>
       _currentSnapshots.where((s) => s.id == _activeNetworkId).firstOrNull;
@@ -222,9 +276,18 @@ class SimulationController extends ChangeNotifier {
   /// Target fallback otomatis saat jaringan aktif terputus (di luar jangkauan).
   String? get fallbackTargetId {
     if (!isActiveNetworkUnavailable) return null;
-    final best = _latestDecision?.baselineTopsisNetworkId ??
-        _latestDecision?.baselineRssNetworkId;
-    if (best != null && best != _activeNetworkId) return best;
+    final topsisId = _latestDecision?.baselineTopsisNetworkId;
+    if (topsisId != null &&
+        topsisId != _activeNetworkId &&
+        _currentSnapshots.any((s) => s.id == topsisId && s.available)) {
+      return topsisId;
+    }
+    final rssId = _latestDecision?.baselineRssNetworkId;
+    if (rssId != null &&
+        rssId != _activeNetworkId &&
+        _currentSnapshots.any((s) => s.id == rssId && s.available)) {
+      return rssId;
+    }
     return _currentSnapshots
         .where((s) => s.available && s.id != _activeNetworkId)
         .firstOrNull
@@ -305,8 +368,8 @@ class SimulationController extends ChangeNotifier {
     // 1. Perbarui mobilitas pengguna
     _rwpGenerator.step(dt);
 
-    // 2. Evaluasi kondisi jaringan dan mesin handover
-    _evaluateCurrentState();
+    // 2. Evaluasi kondisi jaringan dan mesin handover dengan akumulasi langkah
+    _evaluateCurrentState(isSimulationStep: true, dt: dt);
 
     notifyListeners();
   }
@@ -319,13 +382,16 @@ class SimulationController extends ChangeNotifier {
       _stepIndex++;
       _elapsedSeconds += dtPerStep;
       _rwpGenerator.step(dtPerStep);
-      _evaluateCurrentState();
+      _evaluateCurrentState(isSimulationStep: true, dt: dtPerStep);
     }
     notifyListeners();
   }
 
   /// Internal: Evaluasi posisi saat ini ke jaringan dan algoritma keputusan.
-  void _evaluateCurrentState() {
+  ///
+  /// Parameter [isSimulationStep] dan [dt] menentukan apakah ini adalah langkah
+  /// waktu yang maju (sehingga mengakumulasi penghematan data, riwayat baru, dan statistik).
+  void _evaluateCurrentState({bool isSimulationStep = false, double dt = 0.0}) {
     // Ambil parameter kanal jaringan terbaru
     _currentSnapshots = _networkProvider.getSnapshots(
       userPosition: userPosition,
@@ -355,21 +421,57 @@ class SimulationController extends ChangeNotifier {
       candidates: _currentSnapshots,
     );
 
+    // Hitung Quality of Experience (QoE) real-time untuk aplikasi
+    final recSnap = _currentSnapshots.where((s) => s.id == recommendedTargetId).firstOrNull;
+    _currentQoE = _qoeCalculator.evaluate(
+      appProfile: _activeAppProfile,
+      activeSnapshot: activeNetworkSnapshot,
+      recommendedSnapshot: recSnap,
+    );
+
+    // Pelacakan Komparasi Head-to-Head: RSS-only ping-pong vs Smart VHO
+    final currentRssTarget = _latestDecision?.baselineRssNetworkId;
+    if (currentRssTarget != null && currentRssTarget != _lastRssTargetId) {
+      if (_lastRssTargetId != null) {
+        _rssHandoverCount++;
+      }
+      if ((_elapsedSeconds - _lastRssTargetTime) <= pingPongWindowSeconds &&
+          _lastRssTargetTime >= 0.0) {
+        // Metode RSS-Only mengalami ping-pong osilasi
+        if (_latestDecision?.action == DecisionAction.stay || !isHandoverRecommended) {
+          _preventedPingPongCount++;
+        }
+      }
+      _lastRssTargetId = currentRssTarget;
+      _lastRssTargetTime = _elapsedSeconds;
+    }
+
+    // Akumulasi penghematan data seluler jika menggunakan Wi-Fi saat waktu maju
+    if (isSimulationStep && dt > 0.0 && activeNetworkSnapshot?.technology == NetworkTechnology.wlan) {
+      // Throughput dalam Megabyte (Mbps / 8 * dt) dengan faktor utilisasi aktif 25%
+      _cellularDataSavedMb += (activeNetworkSnapshot!.dataRateMbps / 8.0) * 0.25 * dt;
+    }
+
     // Perbarui metrik performa
     _metrics.totalSteps = _stepIndex;
-    _metrics.totalEvaluations++;
 
-    if (isHandoverRecommended) {
-      _metrics.recommendationCount++;
-      final target = recommendedTargetId;
-      if (target != null) {
-        _metrics.targetDistribution[target] =
-            (_metrics.targetDistribution[target] ?? 0) + 1;
+    if (isSimulationStep) {
+      _metrics.totalEvaluations++;
+
+      if (isHandoverRecommended) {
+        _metrics.recommendationCount++;
+        final target = recommendedTargetId;
+        if (target != null) {
+          _metrics.targetDistribution[target] =
+              (_metrics.targetDistribution[target] ?? 0) + 1;
+        }
+      } else if (_latestDecision!.action == DecisionAction.stay) {
+        _metrics.stayCount++;
+      } else if (_latestDecision!.action == DecisionAction.insufficientData) {
+        _metrics.insufficientDataCount++;
       }
-    } else if (_latestDecision!.action == DecisionAction.stay) {
-      _metrics.stayCount++;
-    } else if (_latestDecision!.action == DecisionAction.insufficientData) {
-      _metrics.insufficientDataCount++;
+    } else if (_metrics.totalEvaluations == 0) {
+      _metrics.totalEvaluations = 1;
     }
 
     // Buat catatan riwayat audit log
@@ -396,20 +498,24 @@ class SimulationController extends ChangeNotifier {
       ranking: _latestDecision!.ranking,
     );
 
-    _history.add(record);
-
-    // Jaga batas memori (Bounded Buffer)
-    if (_history.length > maxHistoryCapacity) {
-      _history.removeAt(0);
+    if (isSimulationStep || _history.isEmpty) {
+      _history.add(record);
+      // Jaga batas memori (Bounded Buffer)
+      if (_history.length > maxHistoryCapacity) {
+        _history.removeAt(0);
+      }
+    } else {
+      // Saat hanya perubahan profil/jaringan statis, perbarui record terakhir
+      _history[_history.length - 1] = record;
     }
   }
 
   // --- Aksi Pengguna (Advisory Interactions) ---
 
-  /// Menerima rekomendasi handover dan berpindah ke jaringan target.
+  /// Menerima rekomendasi handover dan berpindah ke jaringan target secara aman.
   void acceptHandover() {
-    if (!isHandoverRecommended) return;
-    final target = recommendedTargetId!;
+    final target = recommendedTargetId;
+    if (target == null) return;
     switchActiveNetwork(target);
   }
 
@@ -427,6 +533,7 @@ class SimulationController extends ChangeNotifier {
     _lastSwitchedFromTime = _elapsedSeconds;
 
     _activeNetworkId = newNetworkId;
+    _smartVhoHandoverCount++;
     _stabilizer.reset();
 
     // Catat eksekusi handover ke metrik
@@ -435,6 +542,12 @@ class SimulationController extends ChangeNotifier {
     // Evaluasi ulang segera dengan jaringan aktif yang baru
     _evaluateCurrentState();
     notifyListeners();
+  }
+
+  /// Memeriksa apakah jaringan target saat ini terjangkau sinyalnya (bisa connect).
+  bool canConnectToNetwork(String networkId) {
+    final snap = _currentSnapshots.where((s) => s.id == networkId).firstOrNull;
+    return snap != null && snap.available;
   }
 
   /// Mengubah profil kelas trafik yang aktif secara langsung.
@@ -476,6 +589,12 @@ class SimulationController extends ChangeNotifier {
     }
     _lastSwitchedFromId = null;
     _lastSwitchedFromTime = -100.0;
+    _rssHandoverCount = 0;
+    _smartVhoHandoverCount = 0;
+    _preventedPingPongCount = 0;
+    _cellularDataSavedMb = 0.0;
+    _lastRssTargetId = null;
+    _lastRssTargetTime = -100.0;
 
     _rwpGenerator.reset(customSeed: newSeed);
     _stabilizer.reset();
