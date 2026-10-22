@@ -49,14 +49,27 @@ build/
 .pub-cache/
 .pub/
 /build/
+# IDE & Editor files
+.vscode/
 .idea/
 *.iml
 *.iws
+
+# Sensitive credentials & environment keys
+*.env
+*.env.*
+*.key
+*.pem
+*.keystore
+*.jks
+*credentials*
+*secret*
+local.properties
+google-services.json
+GoogleService-Info.plist
 .metadata
 .flutter-plugins
 .flutter-plugins-dependencies
 
 # Graphify
 graphify-out/
-
-
