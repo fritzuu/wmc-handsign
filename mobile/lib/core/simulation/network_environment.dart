@@ -69,6 +69,68 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
     return val.toDouble();
   }
 
+  /// Override beban sel tertentu (misal untuk skenario kongesti buatan).
+  final Map<String, double> forcedCellLoad = {};
+
+  /// Mengatur beban sel manual untuk simulasi skenario khusus.
+  void setCellLoad(String nodeId, double? load) {
+    if (load == null) {
+      forcedCellLoad.remove(nodeId);
+    } else {
+      forcedCellLoad[nodeId] = load.clamp(0.0, 1.0);
+    }
+  }
+
+  /// Menghapus semua override beban sel manual.
+  void clearForcedCellLoad() {
+    forcedCellLoad.clear();
+  }
+
+  /// Menghitung faktor beban trafik dinamis (Cell Traffic Congestion) L(t) in [0.0, 1.0].
+  /// Menggabungkan beban dasar stasioner, osilasi trafik pengguna jam sibuk (temporal drift wave),
+  /// micro-burst alami, dan variasi Gaussian terkontrol tanpa white noise murni liar.
+  double computeCellLoad(String nodeId, double elapsedSeconds) {
+    if (forcedCellLoad.containsKey(nodeId)) {
+      return forcedCellLoad[nodeId]!.clamp(0.0, 1.0);
+    }
+
+    double baseLoad;
+    double wave;
+
+    switch (nodeId) {
+      case 'wifi':
+        // Wi-Fi lokal kantor/kafe: fluktuasi dinamis akibat contention sharing banyak perangkat
+        baseLoad = 0.28;
+        wave = 0.16 * sin(elapsedSeconds * 2 * pi / 38.0) +
+            0.08 * sin(elapsedSeconds * 2 * pi / 14.0);
+        // Siklus burst periodik (misal unduhan file bersamaan setiap ~75 detik)
+        final cycle = elapsedSeconds % 75.0;
+        if (cycle >= 35.0 && cycle <= 55.0) {
+          final burstProgress = (cycle - 35.0) / 20.0;
+          wave += 0.35 * sin(burstProgress * pi);
+        }
+        break;
+
+      case '5g_nr':
+        // 5G mmWave/C-Band: kapasitas sangat lapang, beban relatif stabil dengan osilasi lambat
+        baseLoad = 0.20;
+        wave = 0.12 * sin((elapsedSeconds + 12.0) * 2 * pi / 55.0) +
+            0.05 * sin(elapsedSeconds * 2 * pi / 22.0);
+        break;
+
+      case '4g_lte':
+      default:
+        // 4G Macro cell: trafik seluler publik yang aktif dan stabil
+        baseLoad = 0.38;
+        wave = 0.14 * sin((elapsedSeconds + 28.0) * 2 * pi / 48.0) +
+            0.06 * sin(elapsedSeconds * 2 * pi / 19.0);
+        break;
+    }
+
+    final noise = _gaussianNoise(0.0, 0.02);
+    return (baseLoad + wave + noise).clamp(0.05, 0.95);
+  }
+
   @override
   List<NetworkSnapshot> getSnapshots({
     required MobilityPoint userPosition,
@@ -79,6 +141,7 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
     for (final node in nodes) {
       final distance = max(1.0, node.distanceTo(userPosition));
       final inRange = distance <= node.coverageRadiusM;
+      final loadFactor = computeCellLoad(node.id, elapsedSeconds);
 
       if (!inRange) {
         // Di luar jangkauan: sinyal terus melemah sesuai path loss terhadap jarak berlebih
@@ -114,6 +177,7 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
             ber: node.berMax,
             available: false,
             parameterSource: ParameterSource.synthetic,
+            loadFactor: (loadFactor * 100).round() / 100.0,
           ),
         );
         continue;
@@ -141,6 +205,20 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
 
       // 4. Bit Error Rate dasar
       double ber = _lerpLog(node.berMax, node.berMin, noisyQuality);
+
+      // Modulasi Throughput berdasarkan beban trafik sel dinamis (Channel capacity sharing)
+      // Mengikuti kurva throughput efektif kanal CSMA/CA dan OFDMA saat utilitas meningkat
+      final capacityRatio = pow(1.0 - (loadFactor * 0.96).clamp(0.0, 0.95), 1.8).clamp(0.02, 1.0);
+      dataRateMbps = dataRateMbps * capacityRatio;
+
+      // Modulasi Delay akibat antrian buffer (Bufferbloat / M/M/1 queueing delay)
+      // Latensi membengkak tajam saat load mendekati saturasi (1 / (1 - load))
+      final queueDelayMs = (pow(loadFactor, 2.0) / (1.05 - loadFactor)) *
+          (node.technology == NetworkTechnology.wlan ? 7.0 : 5.0);
+      delayMs = delayMs + queueDelayMs;
+
+      // Modulasi BER akibat packet collisions pada kanal yang padat
+      ber = ber * (1.0 + loadFactor * 2.5);
 
       // Deteksi apakah rintangan menghalangi sinyal antara base station dan pengguna (NLoS)
       final blockingObstacle = obstacles
@@ -195,6 +273,7 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
           ber: finalBer,
           available: true,
           parameterSource: ParameterSource.synthetic,
+          loadFactor: (loadFactor * 100).round() / 100.0,
         ),
       );
     }

@@ -214,7 +214,7 @@ class ActiveNetworkSelectorCard extends StatelessWidget {
                             const SizedBox(height: 3),
                             Text(
                               inRange
-                                  ? '${s.rssDbm.toStringAsFixed(0)} dBm · ${s.dataRateMbps.toStringAsFixed(0)} Mbps · ${s.delayMs.toStringAsFixed(0)} ms'
+                                  ? '${s.rssDbm.toStringAsFixed(0)} dBm · ${s.dataRateMbps.toStringAsFixed(0)} Mbps · ${s.delayMs.toStringAsFixed(0)} ms · ${s.loadLabel}'
                                   : 'Sinyal tidak terdeteksi dari posisimu',
                               style: TextStyle(
                                 fontSize: 9.5,

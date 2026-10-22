@@ -195,9 +195,16 @@ class _SimulationMapCardState extends State<SimulationMapCard> {
                   ),
                 ),
                 _ScenarioChip(
-                  label: '📶 Wi-Fi Terbaik',
+                  label: '📶 Wi-Fi Prima',
                   isActive: activeScenario == SimulationPresetScenario.wifiOptimal,
                   onTap: () => controller.applyPresetScenario(SimulationPresetScenario.wifiOptimal),
+                  isDark: isDark,
+                  borderColor: context.borderColor,
+                ),
+                _ScenarioChip(
+                  label: '⚠️ Wi-Fi Kongesti',
+                  isActive: activeScenario == SimulationPresetScenario.wifiCongested,
+                  onTap: () => controller.applyPresetScenario(SimulationPresetScenario.wifiCongested),
                   isDark: isDark,
                   borderColor: context.borderColor,
                 ),

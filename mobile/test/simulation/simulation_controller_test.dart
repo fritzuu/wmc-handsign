@@ -315,6 +315,45 @@ void main() {
       }
     });
 
+    test('Preset Skenario: Wi-Fi Kongesti membuktikan kelemahan fatal RSS-Only yang buta kapasitas', () {
+      final controller = SimulationController();
+      controller.applyPresetScenario(SimulationPresetScenario.wifiCongested);
+
+      expect(controller.activePresetScenario, equals(SimulationPresetScenario.wifiCongested));
+      expect(controller.activeNetworkId, equals('wifi'));
+
+      final wifiSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.wlan);
+      final nrSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.nr);
+
+      // RSS Wi-Fi sangat kuat (-30 s.d. -45 dBm) karena user persis di depan AP
+      expect(wifiSnap.rssDbm, greaterThan(-45.0));
+      // Namun karena kongesti kanal 92%, throughput Wi-Fi ambruk dan delay membengkak
+      expect(wifiSnap.loadFactor, greaterThanOrEqualTo(0.85));
+      expect(wifiSnap.dataRateMbps, lessThan(35.0));
+      expect(wifiSnap.delayMs, greaterThan(30.0));
+
+      // 5G memiliki kapasitas yang jauh lebih superior dibanding Wi-Fi yang congested
+      expect(nrSnap.dataRateMbps, greaterThan(wifiSnap.dataRateMbps));
+
+      // RSS-Only secara naif tetap memilih Wi-Fi karena RSS-nya paling kuat (-35 dBm)
+      expect(controller.baselineRssNetworkId, equals('wifi'));
+
+      // Smart VHO Multi-Criteria Evaluator (AHP-TOPSIS) mendeteksi Wi-Fi terdegradasi dan memilih 5G
+      expect(controller.currentAppReport?.bestCandidate?.candidate.id, equals('5g_nr'));
+      final nrScore = controller.currentAppReport!.rankings
+          .firstWhere((r) => r.candidate.id == '5g_nr')
+          .suitabilityScore;
+      final wifiScore = controller.currentAppReport!.rankings
+          .firstWhere((r) => r.candidate.id == 'wifi')
+          .suitabilityScore;
+      expect(nrScore, greaterThan(wifiScore));
+
+      // Kandidat 5G memenuhi SLA aplikasi, sedangkan Wi-Fi menderita akibat kongesti
+      final wifiSuitability = controller.currentAppReport!.rankings
+          .firstWhere((r) => r.candidate.id == 'wifi');
+      expect(wifiSuitability.suitabilityScore, lessThan(nrScore));
+    });
+
     test('Preset Skenario: 5G Terbaik (LoS) memposisikan user di area terbuka dengan throughput puncak', () {
       final controller = SimulationController();
       controller.applyPresetScenario(SimulationPresetScenario.fiveGLineOfSight);
@@ -324,9 +363,9 @@ void main() {
 
       final nrSnap = controller.snapshots.firstWhere((s) => s.technology == NetworkTechnology.nr);
       expect(nrSnap.available, isTrue);
-      // Di ruang terbuka (LoS) dekat tower, 5G throughput harus sangat tinggi
-      expect(nrSnap.dataRateMbps, greaterThan(500.0));
-      expect(nrSnap.delayMs, lessThan(10.0));
+      // Di ruang terbuka (LoS) dekat tower, 5G throughput sangat tinggi (> 300 Mbps)
+      expect(nrSnap.dataRateMbps, greaterThan(300.0));
+      expect(nrSnap.delayMs, lessThan(15.0));
     });
 
     test('Preset Skenario: 4G Terbaik (Obstacle) menempatkan user di gedung beton NLoS (5G teredam masif)', () {

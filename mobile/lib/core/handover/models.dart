@@ -72,6 +72,7 @@ class NetworkSnapshot {
   final double ber;
   final bool available;
   final ParameterSource parameterSource;
+  final double loadFactor;
 
   NetworkSnapshot({
     required this.id,
@@ -82,6 +83,7 @@ class NetworkSnapshot {
     required this.ber,
     this.available = true,
     this.parameterSource = ParameterSource.estimated,
+    this.loadFactor = 0.0,
   }) {
     if (id.trim().isEmpty)
       throw ArgumentError('ID jaringan tidak boleh kosong');
@@ -89,6 +91,7 @@ class NetworkSnapshot {
     requireFinite('dataRateMbps', dataRateMbps, minimum: 0);
     requireFinite('delayMs', delayMs, minimum: 0);
     requireFinite('ber', ber, minimum: 0, maximum: 1);
+    requireFinite('loadFactor', loadFactor, minimum: 0, maximum: 1);
   }
 
   Map<String, Object> toJson() => {
@@ -100,12 +103,25 @@ class NetworkSnapshot {
     'ber': ber,
     'available': available,
     'parameter_source': parameterSource.name,
+    'load_factor': loadFactor,
   };
 }
 
 extension NetworkSnapshotDisplay on NetworkSnapshot {
   /// Nama tampilan ramah pengguna (misal: "Wi-Fi", "5G NR", "4G LTE").
   String get displayName => formatNetworkLabel(id);
+
+  /// Persentase beban kapasitas sel (0 - 100%).
+  int get loadPercentage => (loadFactor * 100).clamp(0, 100).round();
+
+  /// Label tingkat kepadatan beban trafik sel (Cell Congestion Level).
+  String get loadLabel {
+    final pct = loadPercentage;
+    if (loadFactor < 0.35) return 'Lengang ($pct%)';
+    if (loadFactor < 0.65) return 'Normal ($pct%)';
+    if (loadFactor < 0.85) return 'Padat ($pct%)';
+    return 'Kongesti ($pct%)';
+  }
 }
 
 class NetworkRank {

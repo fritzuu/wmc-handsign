@@ -209,7 +209,7 @@ class SimulationController extends ChangeNotifier {
     switch (scenario) {
       case SimulationPresetScenario.wifiOptimal:
         // Aktifkan pola dwelling mikro di dalam area Cafe Hub (AP 120, 120)
-        // Pengguna beraktivitas di dalam cafe tanpa kabur dari Wi-Fi
+        // Pengguna beraktivitas di dalam cafe tanpa kabur dari Wi-Fi (kondisi prima, beban rendah)
         _rwpGenerator.setPattern(MobilityPattern.wifiDwell);
         _rwpGenerator.setPosition(
           const MobilityPoint(120.0, 120.0),
@@ -217,6 +217,24 @@ class SimulationController extends ChangeNotifier {
           speed: 1.1,
         );
         _activeNetworkId = 'wifi';
+        if (_networkProvider is SyntheticNetworkEnvironment) {
+          (_networkProvider as SyntheticNetworkEnvironment).setCellLoad('wifi', 0.15);
+        }
+        break;
+
+      case SimulationPresetScenario.wifiCongested:
+        // Skenario Uji Kritis: User di depan AP Wi-Fi (RSS sangat kuat) namun kanal mengalami kongesti 92%
+        // Membuktikan RSS-Only gagal mendeteksi masalah, sementara Smart VHO menyelamatkan sesi ke seluler.
+        _rwpGenerator.setPattern(MobilityPattern.wifiDwell);
+        _rwpGenerator.setPosition(
+          const MobilityPoint(120.0, 120.0),
+          newWaypoint: const MobilityPoint(124.0, 124.0),
+          speed: 0.6,
+        );
+        _activeNetworkId = 'wifi';
+        if (_networkProvider is SyntheticNetworkEnvironment) {
+          (_networkProvider as SyntheticNetworkEnvironment).setCellLoad('wifi', 0.92);
+        }
         break;
 
       case SimulationPresetScenario.fiveGLineOfSight:
@@ -228,6 +246,9 @@ class SimulationController extends ChangeNotifier {
           speed: 2.2,
         );
         _activeNetworkId = '5g_nr';
+        if (_networkProvider is SyntheticNetworkEnvironment) {
+          (_networkProvider as SyntheticNetworkEnvironment).clearForcedCellLoad();
+        }
         break;
 
       case SimulationPresetScenario.fourGObstacle:
@@ -239,11 +260,17 @@ class SimulationController extends ChangeNotifier {
           speed: 1.2,
         );
         _activeNetworkId = '4g_lte';
+        if (_networkProvider is SyntheticNetworkEnvironment) {
+          (_networkProvider as SyntheticNetworkEnvironment).clearForcedCellLoad();
+        }
         break;
 
       case SimulationPresetScenario.circuitLoop:
         // Kembalikan ke sirkuit alami multi-zona 15 titik
         _rwpGenerator.setPattern(MobilityPattern.naturalCircuit);
+        if (_networkProvider is SyntheticNetworkEnvironment) {
+          (_networkProvider as SyntheticNetworkEnvironment).clearForcedCellLoad();
+        }
         break;
     }
 
@@ -254,6 +281,9 @@ class SimulationController extends ChangeNotifier {
 
   /// Menempatkan posisi pengguna secara langsung ke koordinat tertentu (Interactive Sandbox Tap-to-Place).
   void teleportUser(MobilityPoint targetPosition) {
+    if (_networkProvider is SyntheticNetworkEnvironment) {
+      (_networkProvider as SyntheticNetworkEnvironment).clearForcedCellLoad();
+    }
     _rwpGenerator.setPosition(
       targetPosition,
       newWaypoint: targetPosition,
@@ -595,6 +625,9 @@ class SimulationController extends ChangeNotifier {
     _cellularDataSavedMb = 0.0;
     _lastRssTargetId = null;
     _lastRssTargetTime = -100.0;
+    if (_networkProvider is SyntheticNetworkEnvironment) {
+      (_networkProvider as SyntheticNetworkEnvironment).clearForcedCellLoad();
+    }
 
     _rwpGenerator.reset(customSeed: newSeed);
     _stabilizer.reset();

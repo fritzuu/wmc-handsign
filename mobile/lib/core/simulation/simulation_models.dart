@@ -209,6 +209,10 @@ enum SimulationPresetScenario {
   /// Skenario 4G Terbaik (Obstacle): Pengguna di dalam zona gedung beton di mana 5G teredam masif.
   fourGObstacle,
 
+  /// Skenario Wi-Fi Kongesti: Sinyal Wi-Fi sangat kuat (-40 dBm) namun kanal padat (congested).
+  /// Membuktikan kelemahan fatal RSS-Only yang buta kapasitas, sementara Smart VHO beralih ke seluler.
+  wifiCongested,
+
   /// Skenario Sirkuit Dinamis: Mobilitas alami memutar melewati ketiga zona secara berulang.
   circuitLoop,
 }
