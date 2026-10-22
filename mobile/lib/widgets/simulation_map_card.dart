@@ -128,24 +128,24 @@ class _SimulationMapCardState extends State<SimulationMapCard> {
                 if (isInObstacle) {
                   bannerColor = AppTheme.errorRed;
                   bannerIcon = Icons.domain_disabled;
-                  bannerText = '🏢 NLoS Gedung Beton: 5G Teredam -24dB ➔ 4G Menjadi Penyelamat #1';
+                  bannerText = 'Zona Rintangan (NLoS): 5G teredam -24dB, dialihkan ke 4G';
                 } else if (distWifi <= 70.0) {
                   bannerColor = const Color(0xFF10B981); // Emerald / Teal
                   bannerIcon = Icons.wifi_tethering;
-                  bannerText = '☕ Coworking Cafe Hub: Wi-Fi Optimal (Latensi Rendah 8ms, Hemat Biaya)';
+                  bannerText = 'Zona Wi-Fi Cafe: Latensi rendah 8ms, hemat kuota';
                 } else if (is5gInRange) {
                   bannerColor = const Color(0xFF6366F1); // Indigo
                   bannerIcon = Icons.visibility;
-                  bannerText = '⚡ Tech Plaza Terbuka: LoS Bebas Hambatan (5G Super Cepat ~800+ Mbps)';
+                  bannerText = 'Zona Terbuka (LoS): 5G optimal berkecepatan tinggi';
                 } else {
                   bannerColor = const Color(0xFF3B82F6); // Blue
                   bannerIcon = Icons.directions_walk;
-                  bannerText = '🚶 Koridor Mobilitas: Di Bawah Jangkauan Payung Luas 4G LTE';
+                  bannerText = 'Zona Koridor: Jangkauan stabil 4G LTE';
                 }
 
                 return Container(
                   margin: const EdgeInsets.only(top: 8, bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                   decoration: BoxDecoration(
                     color: bannerColor.withValues(alpha: isDark ? 0.15 : 0.08),
                     borderRadius: BorderRadius.circular(5),
@@ -168,8 +168,10 @@ class _SimulationMapCardState extends State<SimulationMapCard> {
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
                             color: bannerColor,
+                            height: 1.25,
                           ),
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          softWrap: true,
                         ),
                       ),
                     ],
@@ -200,14 +202,14 @@ class _SimulationMapCardState extends State<SimulationMapCard> {
                   borderColor: context.borderColor,
                 ),
                 _ScenarioChip(
-                  label: '⚡ 5G Terbaik (LoS)',
+                  label: '⚡ 5G LoS',
                   isActive: activeScenario == SimulationPresetScenario.fiveGLineOfSight,
                   onTap: () => controller.applyPresetScenario(SimulationPresetScenario.fiveGLineOfSight),
                   isDark: isDark,
                   borderColor: context.borderColor,
                 ),
                 _ScenarioChip(
-                  label: '🛡️ 4G Terbaik (Rintangan)',
+                  label: '🛡️ 4G Rintangan',
                   isActive: activeScenario == SimulationPresetScenario.fourGObstacle,
                   onTap: () => controller.applyPresetScenario(SimulationPresetScenario.fourGObstacle),
                   isDark: isDark,
@@ -222,31 +224,67 @@ class _SimulationMapCardState extends State<SimulationMapCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            // Panduan Sandbox Interaktif
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0, bottom: 6.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.touch_app_outlined, size: 12, color: Color(0xFF6366F1)),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      'Mode Bebas: Ketuk area peta untuk memindahkan posisi pengguna',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4F46E5),
+                      ),
+                      maxLines: 2,
+                      softWrap: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            // Canvas Peta 2D
+            // Canvas Peta 2D dengan Interaksi Tap-to-Place
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 color: isDark ? const Color(0xFF141414) : const Color(0xFFF1F5F9),
                 child: AspectRatio(
                   aspectRatio: 1.25,
-                  child: CustomPaint(
-                    painter: _SimulationCanvasPainter(
-                      userPosition: userPos,
-                      history: controller.history,
-                      baseStations: controller.baseStations,
-                      obstacles: controller.obstacles,
-                      isInObstacle: isInObstacle,
-                      activeNetworkId: activeId,
-                      isUnavailable: isUnavailable,
-                      showCoverage: _showCoverageCircles,
-                      pattern: controller.mobilityPattern,
-                      isDark: isDark,
-                      borderColor: context.borderColor,
-                      primaryTextColor: context.textPrimaryColor,
-                      secondaryTextColor: context.textSecondaryColor,
-                    ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (details) {
+                          final double localX = details.localPosition.dx;
+                          final double localY = details.localPosition.dy;
+                          final double simX = (localX / constraints.maxWidth * 500.0).clamp(0.0, 500.0);
+                          final double simY = (localY / constraints.maxHeight * 500.0).clamp(0.0, 500.0);
+                          controller.teleportUser(MobilityPoint(simX, simY));
+                        },
+                        child: CustomPaint(
+                          size: Size(constraints.maxWidth, constraints.maxHeight),
+                          painter: _SimulationCanvasPainter(
+                            userPosition: userPos,
+                            history: controller.history,
+                            baseStations: controller.baseStations,
+                            obstacles: controller.obstacles,
+                            isInObstacle: isInObstacle,
+                            activeNetworkId: activeId,
+                            isUnavailable: isUnavailable,
+                            showCoverage: _showCoverageCircles,
+                            pattern: controller.mobilityPattern,
+                            isDark: isDark,
+                            borderColor: context.borderColor,
+                            primaryTextColor: context.textPrimaryColor,
+                            secondaryTextColor: context.textSecondaryColor,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -579,27 +617,87 @@ class _SimulationCanvasPainter extends CustomPainter {
       final obsBottomRight = toCanvas(obs.x + obs.width, obs.y + obs.height);
       final obsRect = Rect.fromPoints(obsTopLeft, obsBottomRight);
 
+      // 1. Background Gedung Beton
       final obsFill = Paint()
-        ..color = isDark ? const Color(0xFF222222) : const Color(0xFFE2E8F0)
+        ..color = isInObstacle
+            ? (isDark ? const Color(0xFF450A0A).withValues(alpha: 0.50) : const Color(0xFFFEE2E2))
+            : (isDark ? const Color(0xFF1E2530) : const Color(0xFFE2E8F0))
         ..style = PaintingStyle.fill;
-      canvas.drawRRect(RRect.fromRectAndRadius(obsRect, const Radius.circular(5)), obsFill);
+      canvas.drawRRect(RRect.fromRectAndRadius(obsRect, const Radius.circular(6)), obsFill);
 
+      // 2. Pola Arsir Arsitektur Beton (Diagonal Cross-Hatching)
+      final hatchPaint = Paint()
+        ..color = (isInObstacle ? AppTheme.errorRed : const Color(0xFF94A3B8)).withValues(alpha: isDark ? 0.35 : 0.40)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+      canvas.save();
+      canvas.clipRRect(RRect.fromRectAndRadius(obsRect, const Radius.circular(6)));
+      const hatchSpacing = 12.0;
+      final totalWidth = obsRect.width + obsRect.height;
+      for (double i = -obsRect.height; i < totalWidth; i += hatchSpacing) {
+        canvas.drawLine(
+          Offset(obsRect.left + i, obsRect.top),
+          Offset(obsRect.left + i + obsRect.height, obsRect.bottom),
+          hatchPaint,
+        );
+      }
+      canvas.restore();
+
+      // 3. Batas Dinding Fisik Rintangan (Clear Solid Structural Wall Border)
       final obsBorder = Paint()
         ..color = isInObstacle
-            ? AppTheme.errorRed.withValues(alpha: 0.7)
-            : (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.15))
+            ? AppTheme.errorRed
+            : (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)) // Amber tegas
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2;
-      canvas.drawRRect(RRect.fromRectAndRadius(obsRect, const Radius.circular(5)), obsBorder);
+        ..strokeWidth = isInObstacle ? 2.2 : 1.8;
+      canvas.drawRRect(RRect.fromRectAndRadius(obsRect, const Radius.circular(6)), obsBorder);
 
-      // Label Gedung
+      // 4. Bracket Sudut Perimetris (Corner Bracket Markers)
+      final bracketPaint = Paint()
+        ..color = isInObstacle ? AppTheme.errorRed : (isDark ? Colors.white : Colors.black)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4;
+      const bracketLen = 8.0;
+      // Top-Left
+      canvas.drawLine(obsTopLeft, Offset(obsTopLeft.dx + bracketLen, obsTopLeft.dy), bracketPaint);
+      canvas.drawLine(obsTopLeft, Offset(obsTopLeft.dx, obsTopLeft.dy + bracketLen), bracketPaint);
+      // Bottom-Right
+      canvas.drawLine(obsBottomRight, Offset(obsBottomRight.dx - bracketLen, obsBottomRight.dy), bracketPaint);
+      canvas.drawLine(obsBottomRight, Offset(obsBottomRight.dx, obsBottomRight.dy - bracketLen), bracketPaint);
+
+      // 5. Label Header Gedung Beton
       _drawText(
         canvas,
         '🏢 ${obs.name}',
-        Offset(obsTopLeft.dx + 4, obsTopLeft.dy + 4),
-        8.0,
-        secondaryTextColor,
+        Offset(obsTopLeft.dx + 6, obsTopLeft.dy + 4),
+        8.5,
+        isInObstacle ? AppTheme.errorRed : (isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309)),
         isBold: true,
+        hasBg: true,
+        bgColor: isDark ? const Color(0xFF121212).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
+      );
+
+      // 6. Label Dimensi & Batas Koordinat
+      _drawText(
+        canvas,
+        '[90m×90m] Batas (${obs.x.toInt()},${obs.y.toInt()})',
+        Offset(obsTopLeft.dx + 6, obsTopLeft.dy + 17),
+        7.5,
+        secondaryTextColor,
+        hasBg: true,
+        bgColor: isDark ? const Color(0xFF121212).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
+      );
+
+      // 7. Keterangan Redaman Fisik RF
+      _drawText(
+        canvas,
+        'Redaman: 5G -24dB | 4G -5dB',
+        Offset(obsTopLeft.dx + 6, obsBottomRight.dy - 13),
+        7.5,
+        isInObstacle ? AppTheme.errorRed : secondaryTextColor,
+        isBold: true,
+        hasBg: true,
+        bgColor: isDark ? const Color(0xFF121212).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
       );
     }
 
@@ -787,29 +885,59 @@ class _SimulationCanvasPainter extends CustomPainter {
       }
     }
 
-    // 4. Garis Koneksi Aktif (User -> Active Base Station / AP)
+    // 4. Garis Koneksi Aktif (Laser Beam: User -> Active Base Station / AP)
     if (activeNode != null) {
       final nodeCanvasPos = toCanvas(activeNode.position.x, activeNode.position.y);
-      final linkColor = isUnavailable
-          ? AppTheme.errorRed
-          : (isDark ? Colors.white : AppTheme.darkNavy);
+      final bool isBlockedByObstacle = isInObstacle && activeNode.technology == NetworkTechnology.nr;
+      final Color linkColor;
+      final String linkLabel;
 
-      final linkPaint = Paint()
-        ..color = linkColor.withValues(alpha: isUnavailable ? 0.75 : 0.6)
+      if (isUnavailable) {
+        linkColor = AppTheme.errorRed;
+        linkLabel = '❌ Terputus';
+      } else if (isBlockedByObstacle) {
+        linkColor = AppTheme.errorRed;
+        linkLabel = '⛔ NLoS (-24dB)';
+      } else if (activeNode.technology == NetworkTechnology.wlan) {
+        linkColor = const Color(0xFF10B981); // Emerald
+        linkLabel = '📶 Wi-Fi 6 (LoS)';
+      } else if (activeNode.technology == NetworkTechnology.nr) {
+        linkColor = const Color(0xFF8B5CF6); // Purple
+        linkLabel = '⚡ 5G LoS (~800M)';
+      } else {
+        linkColor = const Color(0xFF3B82F6); // Blue
+        linkLabel = isInObstacle ? '🛡️ 4G Tembus Beton' : '📶 4G Umbrella';
+      }
+
+      // Glow beam luar
+      final glowPaint = Paint()
+        ..color = linkColor.withValues(alpha: isBlockedByObstacle ? 0.15 : (isDark ? 0.25 : 0.18))
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isUnavailable ? 1.5 : 1.8;
+        ..strokeWidth = 3.5;
+      canvas.drawLine(currentUserCanvasPos, nodeCanvasPos, glowPaint);
 
+      // Core laser beam dalam
+      final linkPaint = Paint()
+        ..color = linkColor.withValues(alpha: isUnavailable ? 0.75 : 0.9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = isBlockedByObstacle ? 1.2 : 1.8;
       canvas.drawLine(currentUserCanvasPos, nodeCanvasPos, linkPaint);
 
-      // Titik tengah garis koneksi dengan indikator
+      // Label status sinyal di tengah garis koneksi
       final midPoint = Offset(
         (currentUserCanvasPos.dx + nodeCanvasPos.dx) / 2,
         (currentUserCanvasPos.dy + nodeCanvasPos.dy) / 2,
       );
-      final midDotPaint = Paint()
-        ..color = linkColor
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(midPoint, 2.5, midDotPaint);
+      _drawText(
+        canvas,
+        linkLabel,
+        Offset(midPoint.dx - 22, midPoint.dy - 6),
+        7.5,
+        linkColor,
+        isBold: true,
+        hasBg: true,
+        bgColor: isDark ? const Color(0xFF141414).withValues(alpha: 0.9) : Colors.white.withValues(alpha: 0.9),
+      );
     }
 
     // 5. Posisi Pengguna Terkini (Current User Marker)
