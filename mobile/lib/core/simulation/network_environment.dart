@@ -13,27 +13,32 @@ import 'simulation_models.dart';
 /// - Reprodusibilitas penuh menggunakan random seed.
 class SyntheticNetworkEnvironment implements NetworkDataProvider {
   final List<BaseStationNode> nodes;
+  final List<ObstacleZone> obstacles;
   final Random _rng;
   final double pathLossExponent;
   final double shadowFadingStd;
 
   SyntheticNetworkEnvironment({
     List<BaseStationNode>? nodes,
+    List<ObstacleZone>? obstacles,
     Random? rng,
     this.pathLossExponent = 3.0,
     this.shadowFadingStd = 1.0,
   })  : nodes = nodes ?? defaultSimulationBaseStations,
+        obstacles = obstacles ?? defaultSimulationObstacles,
         _rng = rng ?? Random();
 
   /// Konstruktor dengan seed eksplisit untuk pengujian deterministik.
   factory SyntheticNetworkEnvironment.seeded(
     int seed, {
     List<BaseStationNode>? nodes,
+    List<ObstacleZone>? obstacles,
     double pathLossExponent = 3.0,
     double shadowFadingStd = 1.0,
   }) {
     return SyntheticNetworkEnvironment(
       nodes: nodes,
+      obstacles: obstacles,
       rng: Random(seed),
       pathLossExponent: pathLossExponent,
       shadowFadingStd: shadowFadingStd,
@@ -70,6 +75,9 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
     required double elapsedSeconds,
   }) {
     final snapshots = <NetworkSnapshot>[];
+
+    final activeObstacle =
+        obstacles.where((o) => o.contains(userPosition)).firstOrNull;
 
     for (final node in nodes) {
       final distance = max(1.0, node.distanceTo(userPosition));
@@ -122,24 +130,41 @@ class SyntheticNetworkEnvironment implements NetworkDataProvider {
       final noisyQuality =
           (rawQuality + _gaussianNoise(0.0, 0.02)).clamp(0.01, 0.99);
 
-      // 1. Daya sinyal (RSS)
-      final rawRss = _lerp(node.rssMin, node.rssMax, noisyQuality) +
+      // 1. Daya sinyal dasar (RSS)
+      double rawRss = _lerp(node.rssMin, node.rssMax, noisyQuality) +
           _gaussianNoise(0.0, shadowFadingStd);
-      final rssDbm = rawRss.clamp(node.rssMin, node.rssMax);
 
-      // 2. Kecepatan data (Throughput) proporsional non-linear terhadap kualitas kanal
+      // 2. Kecepatan data dasar (Throughput)
       final rateFactor = pow(noisyQuality, 1.5).toDouble();
-      final dataRateMbps = _lerp(node.dataRateMin, node.dataRateMax, rateFactor)
-          .clamp(node.dataRateMin, node.dataRateMax);
+      double dataRateMbps = _lerp(node.dataRateMin, node.dataRateMax, rateFactor);
 
-      // 3. Delay berbanding terbalik terhadap kualitas kanal
+      // 3. Delay dasar
       final delayFactor = pow(1.0 - noisyQuality, 1.2).toDouble();
-      final delayMs = _lerp(node.delayMin, node.delayMax, delayFactor)
-          .clamp(node.delayMin, node.delayMax);
+      double delayMs = _lerp(node.delayMin, node.delayMax, delayFactor);
 
-      // 4. Bit Error Rate berbanding terbalik pada skala logaritmik
-      final ber = _lerpLog(node.berMax, node.berMin, noisyQuality)
-          .clamp(node.berMin, node.berMax);
+      // 4. Bit Error Rate dasar
+      double ber = _lerpLog(node.berMax, node.berMin, noisyQuality);
+
+      // Efek Fisika Rintangan (Obstacle / Non-Line-of-Sight Attenuation)
+      if (activeObstacle != null) {
+        if (node.technology == NetworkTechnology.nr) {
+          // 5G: Redaman Non-Line-of-Sight masif (gelombang milimeter terhalang beton)
+          rawRss -= activeObstacle.attenuation5gDb;
+          dataRateMbps = (dataRateMbps * 0.15).clamp(node.dataRateMin, node.dataRateMax);
+          delayMs = (delayMs + 15.0).clamp(node.delayMin, node.delayMax);
+          ber = (ber * 25.0).clamp(node.berMin, node.berMax);
+        } else if (node.technology == NetworkTechnology.lte) {
+          // 4G: Redaman penetrasi ringan (gelombang sub-2GHz mampu menembus material)
+          rawRss -= activeObstacle.attenuation4gDb;
+          dataRateMbps = (dataRateMbps * 0.90).clamp(node.dataRateMin, node.dataRateMax);
+          delayMs = (delayMs + 2.0).clamp(node.delayMin, node.delayMax);
+        }
+      }
+
+      final rssDbm = rawRss.clamp(node.rssMin, node.rssMax);
+      dataRateMbps = dataRateMbps.clamp(node.dataRateMin, node.dataRateMax);
+      delayMs = delayMs.clamp(node.delayMin, node.delayMax);
+      ber = ber.clamp(node.berMin, node.berMax);
 
       snapshots.add(
         NetworkSnapshot(

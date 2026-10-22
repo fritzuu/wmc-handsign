@@ -52,7 +52,7 @@ Berdasarkan sintesis standar 3GPP TS 23.501, ITU-T G.1010, dan Ndegwa et al. (20
 
 ## 3. Formulasi Matematis Evaluasi Kesesuaian Jaringan (App Suitability Score)
 
-Untuk menentukan jaringan mana yang paling cocok bagi aplikasi tertentu di antara alternatif jaringan yang terdeteksi (4G LTE, 5G NR, WLAN), digunakan formulasi **Skor Kesesuaian Multi-Kriteria Terbobot** (*Weighted Application Suitability Score*):
+Untuk menentukan jaringan mana yang paling cocok bagi aplikasi tertentu di antara alternatif jaringan yang terdeteksi (4G, 5G, dan Wi-Fi / WLAN), digunakan formulasi **Skor Kesesuaian Multi-Kriteria Terbobot** (*Weighted Application Suitability Score*):
 
 ### 3.1. Fungsi Normalisasi Pemenuhan Kriteria ($S_j$)
 
