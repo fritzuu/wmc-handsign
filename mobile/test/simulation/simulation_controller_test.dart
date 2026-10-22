@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:project_handsign/core/application/application.dart';
 import 'package:project_handsign/core/mobility/mobility.dart';
 import 'package:project_handsign/core/simulation/simulation.dart';
 
@@ -231,6 +232,20 @@ void main() {
       expect(controller.metrics.totalSteps, equals(0));
       expect(controller.metrics.totalEvaluations, equals(1)); // evaluasi t=0s
     });
+    test('selectAppProfile() mengubah profil aplikasi dan menyinkronkan laporan kesesuaian', () {
+      final controller = SimulationController();
+      expect(controller.activeAppProfile.id, equals('youtube'));
+      expect(controller.trafficClass, equals(TrafficClass.streaming));
+      expect(controller.currentAppReport, isNotNull);
+
+      final gamingProfile = AppCatalog.getById('mobile_legends');
+      controller.selectAppProfile(gamingProfile);
+
+      expect(controller.activeAppProfile.id, equals('mobile_legends'));
+      expect(controller.trafficClass, equals(TrafficClass.interactive));
+      expect(controller.currentAppReport!.appProfile.id, equals('mobile_legends'));
+    });
+
     test('Link failure: Jaringan aktif di luar jangkauan memicu rekomendasi fallback darurat', () {
       final controller = SimulationController(
         initialActiveNetworkId: 'wifi_ap', // Wi-Fi di (120,120) coverage 100m, user di (250,250) distance ~184m

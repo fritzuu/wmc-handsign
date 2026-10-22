@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_recommendation_card.dart';
 
 /// Screen 2 — Home Dashboard (Minimalist Black & White)
 class HomeScreen extends StatelessWidget {
@@ -19,7 +20,9 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SimulationStatusHeroCard(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
+            AppRecommendationCard(compact: true),
+            SizedBox(height: 16),
             _SimulatorWorkflowSection(),
             SizedBox(height: 22),
             _MainMenuGridSection(),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/application/application.dart';
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/theme_controller.dart';
+import '../../widgets/app_selector_sheet.dart';
 
 /// Screen 7 — Pengaturan & Konfigurasi Parameter (Monokrom Modern & Dark Mode)
 class SettingsScreen extends StatelessWidget {
@@ -166,6 +168,9 @@ class _TrafficClassSelectorSection extends StatelessWidget {
     final currentThreshold = context.select<SimulationController, double>(
       (c) => c.currentThreshold,
     );
+    final activeProfile = context.select<SimulationController, AppProfile>(
+      (c) => c.activeAppProfile,
+    );
     final isDark = context.isDark;
 
     return Card(
@@ -195,12 +200,59 @@ class _TrafficClassSelectorSection extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
+
+            // Profil Aplikasi Terpilih
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: context.borderColor, width: 1.0),
+              ),
+              child: Row(
+                children: [
+                  Icon(activeProfile.icon, size: 16, color: context.textPrimaryColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeProfile.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimaryColor,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          'SLA: Min ${activeProfile.sla.minDataRateMbps.toStringAsFixed(1)} Mbps · Max Delay ${activeProfile.sla.maxDelayMs.toStringAsFixed(0)} ms',
+                          style: TextStyle(fontSize: 10, color: context.textSecondaryColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.swap_horiz, size: 12),
+                    label: const Text('Ganti', style: TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => AppSelectorSheet.show(context),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
             Text(
               'Pilih jenis trafik untuk mengubah prioritas bobot TOPSIS dan ambang Fuzzy:',
               style: TextStyle(fontSize: 11, color: context.textSecondaryColor),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 6,
               runSpacing: 6,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
+import '../application/application.dart';
 import '../handover/handover.dart';
 import '../mobility/mobility.dart';
 import 'network_environment.dart';
@@ -33,6 +34,9 @@ class SimulationController extends ChangeNotifier {
 
   String _activeNetworkId;
   TrafficClass _trafficClass;
+  AppProfile _activeAppProfile;
+  final AppNetworkEvaluator _appEvaluator;
+  AppSuitabilityReport? _currentAppReport;
 
   List<NetworkSnapshot> _currentSnapshots = const [];
   DecisionResult? _latestRawDecision;
@@ -61,6 +65,8 @@ class SimulationController extends ChangeNotifier {
     NetworkDataProvider? networkProvider,
     HandoverDecisionEngine? engine,
     RecommendationStabilizer? stabilizer,
+    AppNetworkEvaluator? appEvaluator,
+    AppProfile? initialAppProfile,
     String initialActiveNetworkId = 'lte_macro',
     TrafficClass initialTrafficClass = TrafficClass.streaming,
     this.maxHistoryCapacity = 1000,
@@ -70,8 +76,11 @@ class SimulationController extends ChangeNotifier {
         _engine = engine ??
             HandoverDecisionEngine(configuration: defaultPracticalConfiguration),
         _stabilizer = stabilizer ?? RecommendationStabilizer(),
+        _appEvaluator = appEvaluator ??
+            AppNetworkEvaluator(configuration: defaultPracticalConfiguration),
+        _activeAppProfile = initialAppProfile ?? AppCatalog.defaultProfiles.first,
         _activeNetworkId = initialActiveNetworkId,
-        _trafficClass = initialTrafficClass {
+        _trafficClass = initialAppProfile?.trafficClass ?? initialTrafficClass {
     // Evaluasi awal pada t = 0s
     _evaluateCurrentState();
   }
@@ -83,6 +92,9 @@ class SimulationController extends ChangeNotifier {
   bool get isRunning => _isRunning;
   String get activeNetworkId => _activeNetworkId;
   TrafficClass get trafficClass => _trafficClass;
+  AppProfile get activeAppProfile => _activeAppProfile;
+  AppSuitabilityReport? get currentAppReport => _currentAppReport;
+  AppNetworkEvaluator get appEvaluator => _appEvaluator;
 
   MobilityState get mobilityState => _rwpGenerator.currentState;
   MobilityPoint get userPosition => _rwpGenerator.currentState.position;
@@ -230,6 +242,12 @@ class SimulationController extends ChangeNotifier {
       elapsed: elapsedDuration,
     );
 
+    // Evaluasi kecocokan kandidat jaringan terhadap aplikasi aktif
+    _currentAppReport = _appEvaluator.evaluate(
+      appProfile: _activeAppProfile,
+      candidates: _currentSnapshots,
+    );
+
     // Perbarui metrik performa
     _metrics.totalSteps = _stepIndex;
     _metrics.totalEvaluations++;
@@ -312,10 +330,25 @@ class SimulationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Mengubah profil kelas trafik yang aktif.
+  /// Mengubah profil kelas trafik yang aktif secara langsung.
   void setTrafficClass(TrafficClass newClass) {
     if (_trafficClass == newClass) return;
     _trafficClass = newClass;
+    if (_activeAppProfile.trafficClass != newClass) {
+      _activeAppProfile = AppCatalog.getById('custom').copyWith(trafficClass: newClass);
+    }
+    _stabilizer.reset();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
+
+  /// Mengganti profil aplikasi spesifik yang disimulasikan.
+  void selectAppProfile(AppProfile profile) {
+    _activeAppProfile = profile;
+    _trafficClass = profile.trafficClass;
+    if (profile.customThreshold != null) {
+      setThreshold(profile.customThreshold!);
+    }
     _stabilizer.reset();
     _evaluateCurrentState();
     notifyListeners();

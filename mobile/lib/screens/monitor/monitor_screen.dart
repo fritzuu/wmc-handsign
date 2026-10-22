@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_recommendation_card.dart';
 
 /// Screen 6 — Cockpit Monitor Simulasi (Real-Time Playback & Sinyal RF Monokrom)
 class MonitorScreen extends StatelessWidget {
@@ -18,6 +19,8 @@ class MonitorScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _PlaybackControlsCard(),
+            SizedBox(height: 14),
+            AppRecommendationCard(),
             SizedBox(height: 14),
             _MobilityPositionQuickCard(),
             SizedBox(height: 14),
