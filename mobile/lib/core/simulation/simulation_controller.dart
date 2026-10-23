@@ -4,14 +4,22 @@ import 'package:flutter/foundation.dart';
 import '../application/application.dart';
 import '../handover/handover.dart';
 import '../mobility/mobility.dart';
+import '../realtime/realtime.dart';
 import 'network_environment.dart';
 import 'simulation_models.dart';
+
+/// Mode sumber data jaringan: simulasi kampus HetNet atau sensor hardware nyata.
+enum SimulationDataSourceMode {
+  simulationHetNet,
+  liveHardwareProbe,
+}
 
 /// Controller utama untuk mengorkestrasi seluruh alur simulasi Vertical Handover.
 ///
 /// Mengintegrasikan:
 /// - Mobilitas pengguna 2D (Random Waypoint Model)
 /// - Lingkungan propagasi RF multi-teknologi (SyntheticNetworkEnvironment)
+/// - Sensor Hardware Nyata (NetworkProbeService & LiveNetworkDataProvider)
 /// - Mesin keputusan dua tahap (HandoverDecisionEngine: Fuzzy FIS 1 & 2 + TOPSIS)
 /// - Penstabil rekomendasi (RecommendationStabilizer: dwell-time & hysteresis)
 /// - Riwayat audit log terikat batas (Bounded History) & metrik performa
@@ -21,7 +29,11 @@ import 'simulation_models.dart';
 /// mengganti jaringan aktif secara diam-diam.
 class SimulationController extends ChangeNotifier {
   final RandomWaypointGenerator _rwpGenerator;
-  final NetworkDataProvider _networkProvider;
+  SimulationDataSourceMode _dataSourceMode = SimulationDataSourceMode.simulationHetNet;
+  final NetworkProbeService _probeService;
+  late final LiveNetworkDataProvider _liveProvider;
+  final NetworkDataProvider _syntheticProvider;
+  NetworkDataProvider _networkProvider;
   HandoverDecisionEngine _engine;
   final RecommendationStabilizer _stabilizer;
   final int maxHistoryCapacity;
@@ -78,6 +90,7 @@ class SimulationController extends ChangeNotifier {
     RecommendationStabilizer? stabilizer,
     AppNetworkEvaluator? appEvaluator,
     AppProfile? initialAppProfile,
+    NetworkProbeService? probeService,
     String initialActiveNetworkId = '4g_lte',
     TrafficClass initialTrafficClass = TrafficClass.streaming,
     this.maxHistoryCapacity = 1000,
@@ -92,7 +105,9 @@ class SimulationController extends ChangeNotifier {
                 pattern: MobilityPattern.naturalCircuit,
               ),
             ),
+        _syntheticProvider = networkProvider ?? SyntheticNetworkEnvironment(),
         _networkProvider = networkProvider ?? SyntheticNetworkEnvironment(),
+        _probeService = probeService ?? NetworkProbeService(),
         _engine = engine ??
             HandoverDecisionEngine(configuration: defaultPracticalConfiguration),
         _stabilizer = stabilizer ?? RecommendationStabilizer(),
@@ -101,6 +116,16 @@ class SimulationController extends ChangeNotifier {
         _activeAppProfile = initialAppProfile ?? AppCatalog.defaultProfiles.first,
         _activeNetworkId = initialActiveNetworkId,
         _trafficClass = initialAppProfile?.trafficClass ?? initialTrafficClass {
+    _liveProvider = LiveNetworkDataProvider(probeService: _probeService);
+
+    // Dengarkan pembaruan probe real-time untuk memperbarui evaluasi secara live
+    _probeService.snapshotStream.listen((_) {
+      if (_dataSourceMode == SimulationDataSourceMode.liveHardwareProbe) {
+        _evaluateCurrentState();
+        notifyListeners();
+      }
+    });
+
     // Evaluasi awal pada t = 0s
     _evaluateCurrentState();
   }
@@ -117,6 +142,28 @@ class SimulationController extends ChangeNotifier {
   AppSuitabilityReport? get currentAppReport => _currentAppReport;
   AppNetworkEvaluator get appEvaluator => _appEvaluator;
   QoEEvaluationResult? get currentQoE => _currentQoE;
+
+  SimulationDataSourceMode get dataSourceMode => _dataSourceMode;
+  bool get isLiveMode => _dataSourceMode == SimulationDataSourceMode.liveHardwareProbe;
+  LiveProbeSnapshot get liveSnapshot => _probeService.latestSnapshot;
+  NetworkProbeService get probeService => _probeService;
+
+  /// Mengganti sumber data antara simulasi kampus HetNet dan sensor hardware riil.
+  void setDataSourceMode(SimulationDataSourceMode mode) {
+    if (_dataSourceMode == mode) return;
+    _dataSourceMode = mode;
+    if (mode == SimulationDataSourceMode.liveHardwareProbe) {
+      _networkProvider = _liveProvider;
+      _probeService.startMonitoring(intervalSeconds: 1.5);
+      _activeNetworkId = 'wifi';
+    } else {
+      _probeService.stopMonitoring();
+      _networkProvider = _syntheticProvider;
+    }
+    _stabilizer.reset();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
 
   /// Jumlah ping-pong handover konvensional (RSS-only) yang berhasil dicegah
   int get preventedPingPongCount => _preventedPingPongCount;
@@ -703,6 +750,7 @@ class SimulationController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _probeService.dispose();
     super.dispose();
   }
 }

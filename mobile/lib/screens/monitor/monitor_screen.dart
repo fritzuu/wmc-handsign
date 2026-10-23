@@ -5,6 +5,7 @@ import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/algorithm_vs_baseline_card.dart';
 import '../../widgets/app_recommendation_card.dart';
+import '../../widgets/live_telemetry_source_card.dart';
 import '../../widgets/simulation_map_card.dart';
 
 /// Screen 6 — Cockpit Monitor Simulasi (Real-Time Playback & Sinyal RF Monokrom)
@@ -20,6 +21,8 @@ class MonitorScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            LiveTelemetrySourceCard(),
+            SizedBox(height: 14),
             _PlaybackControlsCard(),
             SizedBox(height: 14),
             SimulationMapCard(),
