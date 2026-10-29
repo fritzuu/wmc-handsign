@@ -29,21 +29,40 @@ void main() {
     expect(find.byTooltip('Beralih ke mode terang'), findsOneWidget);
 
     // 2. Navigasi ke Tab Simulasi (MonitorScreen)
-    await tester.tap(find.byIcon(Icons.sensors_outlined));
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Simulasi'),
+    ));
     await tester.pumpAndSettle();
 
     expect(find.text('Posisi & Mobilitas Pengguna'), findsOneWidget);
     expect(find.text('KEPUTUSAN SAAT INI (ADVISORY)'), findsOneWidget);
 
-    // 3. Navigasi ke Tab Hasil (ResultsScreen)
-    await tester.tap(find.byIcon(Icons.analytics_outlined));
+    // 3. Navigasi ke Tab Realtime (RealtimeScreen)
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Realtime'),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mencoba Terhubung...'), findsOneWidget);
+    expect(find.text('Telemetri Sensor Perangkat Fisik'), findsOneWidget);
+
+    // 4. Navigasi ke Tab Hasil (ResultsScreen)
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Hasil'),
+    ));
     await tester.pumpAndSettle();
 
     expect(find.text('Ringkasan Metrik Simulasi'), findsOneWidget);
     expect(find.text('Perbandingan Metode (Fuzzy-TOPSIS vs Baseline)'), findsOneWidget);
 
-    // 4. Navigasi ke Tab Pengaturan (SettingsScreen)
-    await tester.tap(find.byIcon(Icons.tune_outlined));
+    // 5. Navigasi ke Tab Pengaturan (SettingsScreen)
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Pengaturan'),
+    ));
     await tester.pumpAndSettle();
 
     expect(find.text('Tema Tampilan Aplikasi'), findsOneWidget);
@@ -54,8 +73,12 @@ void main() {
     await tester.tap(find.text('Terang'));
     await tester.pumpAndSettle();
 
-    // 5. Kembali ke Beranda
-    await tester.tap(find.byIcon(Icons.home_outlined));
+    // 6. Kembali ke Beranda
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.text('Beranda'),
+    ));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     expect(find.text('Alur Simulator Vertical Handover'), findsOneWidget);
