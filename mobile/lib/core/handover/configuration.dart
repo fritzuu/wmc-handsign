@@ -117,6 +117,35 @@ class HandoverConfiguration {
     TrafficClass.background: CriterionWeights(.05438, .01863, .2869),
   };
 
+  /// Persyaratan SLA modern (YouTube HD/4K, Game Online, Video Call HD).
+  /// Menggantikan batasan kuno 0.700 Mbps (700 kbps) dengan kebutuhan aplikasi riil modern.
+  static Map<TrafficClass, QosRequirements> modernRequirements() => {
+    TrafficClass.conversational: QosRequirements(
+      rateLowMbps: 0.5,
+      rateHighMbps: 4.0, // Video Call HD / Zoom / Meet
+      delayScaleMs: 120,
+      berScale: .0001,
+    ),
+    TrafficClass.streaming: QosRequirements(
+      rateLowMbps: 2.0,
+      rateHighMbps: 15.0, // YouTube 1080p/4K / Netflix
+      delayScaleMs: 300,
+      berScale: .0001,
+    ),
+    TrafficClass.interactive: QosRequirements(
+      rateLowMbps: 0.5,
+      rateHighMbps: 5.0, // Cloud Gaming / Mobile Legends / Browse
+      delayScaleMs: 100,
+      berScale: .00001,
+    ),
+    TrafficClass.background: QosRequirements(
+      rateLowMbps: .01,
+      rateHighMbps: 2.0, // Background Sync / Download
+      delayScaleMs: 500,
+      berScale: .00001,
+    ),
+  };
+
   static Map<TrafficClass, QosRequirements> defaultRequirements() => {
     TrafficClass.conversational: QosRequirements(
       rateLowMbps: .064,
