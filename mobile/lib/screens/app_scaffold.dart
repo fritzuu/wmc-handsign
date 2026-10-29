@@ -93,6 +93,12 @@ class AppScaffold extends StatelessWidget {
                 selectedIndex: navigationShell.currentIndex,
                 height: 64,
                 onDestinationSelected: (index) {
+                  final controller = context.read<SimulationController>();
+                  if (index == 2) {
+                    controller.setDataSourceMode(SimulationDataSourceMode.liveHardwareProbe);
+                  } else if (controller.isLiveMode) {
+                    controller.setDataSourceMode(SimulationDataSourceMode.simulationHetNet);
+                  }
                   navigationShell.goBranch(
                     index,
                     initialLocation: index == navigationShell.currentIndex,
@@ -105,9 +111,14 @@ class AppScaffold extends StatelessWidget {
                     label: 'Beranda',
                   ),
                   NavigationDestination(
+                    icon: Icon(Icons.map_outlined),
+                    selectedIcon: Icon(Icons.map),
+                    label: 'Simulasi',
+                  ),
+                  NavigationDestination(
                     icon: Icon(Icons.sensors_outlined),
                     selectedIcon: Icon(Icons.sensors),
-                    label: 'Simulasi',
+                    label: 'Realtime',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.analytics_outlined),
