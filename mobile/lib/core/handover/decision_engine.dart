@@ -37,6 +37,7 @@ class HandoverDecisionEngine {
     required double velocityMps,
     required String currentNetworkId,
     required List<NetworkSnapshot> networks,
+    HandoverSensitivity sensitivity = HandoverSensitivity.balanced,
   }) {
     requireFinite('velocityMps', velocityMps, minimum: 0);
     if (currentNetworkId.trim().isEmpty) {
@@ -60,7 +61,23 @@ class HandoverDecisionEngine {
         return a.id.compareTo(b.id);
       });
     final current = input.where((n) => n.id == currentNetworkId).firstOrNull;
-    final threshold = configuration.thresholds[trafficClass]!;
+    final defaultThreshold = configuration.thresholds[trafficClass]!;
+
+    // Adaptasi threshold inisiasi berdasarkan tingkat sensitivitas yang dipilih
+    // Catatan: Jika konfigurasi secara eksplisit diset ke threshold ekstrem (misal 1.0 pada unit test),
+    // hormati batas konfigurasi tersebut.
+    var effectiveThreshold = defaultThreshold;
+    if (defaultThreshold < 0.99) {
+      if (sensitivity == HandoverSensitivity.balanced) {
+        final normRss = current != null ? configuration.normalizedRss(current) : 1.0;
+        if (normRss < 0.35) {
+          effectiveThreshold = (defaultThreshold * 0.70).clamp(0.28, 1.0);
+        }
+      } else if (sensitivity == HandoverSensitivity.aggressive) {
+        effectiveThreshold = (defaultThreshold * 0.50).clamp(0.20, 1.0);
+      }
+    }
+
     DecisionResult result(
       DecisionAction action,
       DecisionReason reason, {
@@ -77,7 +94,7 @@ class HandoverDecisionEngine {
       velocityMps: velocityMps,
       qosFactor: qosFactor,
       handoverFactor: hf,
-      threshold: threshold,
+      threshold: effectiveThreshold,
       ranking: ranking,
       baselineTopsisRanking: baseline,
       baselineTopsisNetworkId: baseline.isEmpty
@@ -97,12 +114,33 @@ class HandoverDecisionEngine {
       );
     }
     final quality = qos.evaluate(current, trafficClass);
+    final normRss = configuration.normalizedRss(current);
     final hf = fuzzy.evaluate(
       qosFactor: quality,
-      normalizedRss: configuration.normalizedRss(current),
+      normalizedRss: normRss,
       velocityMps: velocityMps,
     );
-    if (!shouldInitiate(hf, threshold)) {
+
+    // Opportunistic Handover Check:
+    // Jika sinyal saat ini lemah (<= 2 bar / normRss < 0.38) dan ada kandidat alternatif
+    // dengan skor TOPSIS jauh lebih superior (selisih score >= 0.20 pada mode seimbang / 0.12 pada agresif),
+    // picu inisiasi handover tanpa tertahan deadlock gerbang HF!
+    final bestCandidate = baseline.isNotEmpty ? baseline.first : null;
+    final currentRank = baseline.where((r) => r.networkId == currentNetworkId).firstOrNull;
+    final currentScore = currentRank?.score ?? 0.0;
+    final bestScore = bestCandidate?.score ?? 0.0;
+    final scoreGain = bestScore - currentScore;
+
+    final isOpportunisticCandidate = defaultThreshold < 0.99 &&
+        bestCandidate != null &&
+        bestCandidate.networkId != currentNetworkId &&
+        normRss < 0.38 &&
+        ((sensitivity == HandoverSensitivity.aggressive && scoreGain >= 0.12) ||
+         (sensitivity == HandoverSensitivity.balanced && scoreGain >= 0.20));
+
+    final meetsHf = shouldInitiate(hf, effectiveThreshold);
+
+    if (!meetsHf && !isOpportunisticCandidate) {
       return result(
         DecisionAction.stay,
         DecisionReason.belowThreshold,
@@ -137,6 +175,7 @@ class HandoverDecisionEngine {
 class RecommendationStabilizer {
   final double minimumScoreGain;
   final Duration dwellTime;
+  final bool enableEmergencyFastTrack;
   String? _pendingTarget;
   Duration? _pendingSince;
   Duration? _lastTime;
@@ -146,6 +185,7 @@ class RecommendationStabilizer {
   RecommendationStabilizer({
     this.minimumScoreGain = .05,
     this.dwellTime = const Duration(seconds: 3),
+    this.enableEmergencyFastTrack = false,
   }) {
     requireFinite('minimumScoreGain', minimumScoreGain, minimum: 0, maximum: 1);
     if (dwellTime.isNegative)
@@ -180,7 +220,15 @@ class RecommendationStabilizer {
       _pendingTarget = raw.targetNetworkId;
       _pendingSince = elapsed;
     }
-    if (elapsed - _pendingSince! < dwellTime)
+
+    // Fast-Track Emergency Bypass:
+    // Jika sinyal saat ini sangat lemah (misal Wi-Fi RSS <= -82 dBm / 1-2 bar kritis),
+    // pangkas dwell time menjadi 1 detik agar pengguna tidak mengalami blackout koneksi.
+    final currentNet = raw.networks.where((n) => n.id == raw.currentNetworkId).firstOrNull;
+    final isCriticalSignal = enableEmergencyFastTrack && currentNet != null && currentNet.rssDbm <= -82.0;
+    final effectiveDwell = isCriticalSignal ? const Duration(seconds: 1) : dwellTime;
+
+    if (elapsed - _pendingSince! < effectiveDwell)
       return raw.stayBecause(DecisionReason.waitingForDwell);
     return raw;
   }
