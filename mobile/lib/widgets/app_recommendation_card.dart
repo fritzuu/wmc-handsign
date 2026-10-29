@@ -108,8 +108,8 @@ class AppRecommendationCard extends StatelessWidget {
                               fontSize: 9.5,
                               color: context.textSecondaryColor,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            softWrap: true,
                           ),
                         ],
                       ),
@@ -429,8 +429,8 @@ class AppRecommendationCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 2.5),
                   child: Row(
                     children: [
-                      SizedBox(
-                        width: 90,
+                      Expanded(
+                        flex: 4,
                         child: Text(
                           cand.candidate.displayName,
                           style: TextStyle(
@@ -438,11 +438,13 @@ class AppRecommendationCard extends StatelessWidget {
                             fontWeight: isCandActive ? FontWeight.bold : FontWeight.normal,
                             color: context.textPrimaryColor,
                           ),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Expanded(
+                        flex: 5,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(3),
                           child: LinearProgressIndicator(
