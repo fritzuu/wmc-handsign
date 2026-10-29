@@ -5,6 +5,7 @@ import '../screens/app_scaffold.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/logs/decision_log_screen.dart';
 import '../screens/monitor/monitor_screen.dart';
+import '../screens/realtime/realtime_screen.dart';
 import '../screens/results/results_screen.dart';
 import '../screens/settings/settings_screen.dart';
 
@@ -44,7 +45,17 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Tab 3: Hasil & Metrik Evaluasi
+        // Tab 3: Realtime Telemetri Hardware Fisik
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/realtime',
+              builder: (context, state) => const RealtimeScreen(),
+            ),
+          ],
+        ),
+
+        // Tab 4: Hasil & Metrik Evaluasi
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -54,7 +65,7 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
 
-        // Tab 4: Pengaturan & Konfigurasi
+        // Tab 5: Pengaturan & Konfigurasi
         StatefulShellBranch(
           routes: [
             GoRoute(
