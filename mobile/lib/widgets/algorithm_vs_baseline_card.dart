@@ -339,16 +339,16 @@ class _LiveMetricItem extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 8,
+            fontSize: 9.5,
             fontWeight: FontWeight.w600,
             color: context.textTertiaryColor,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 10.5,
             fontWeight: FontWeight.bold,
             color: isGood ? AppTheme.successGreen : AppTheme.errorRed,
             height: 1.25,
@@ -383,8 +383,8 @@ class _StatItem extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +393,7 @@ class _StatItem extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 7.5,
+                    fontSize: 8.5,
                     color: context.textSecondaryColor,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -401,7 +401,7 @@ class _StatItem extends StatelessWidget {
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 9.5,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.bold,
                     color: context.textPrimaryColor,
                   ),
