@@ -47,6 +47,40 @@ String formatNetworkLabel(String? networkId) {
 
 enum ParameterSource { estimated, measured, synthetic }
 
+/// Sensitivitas inisiasi handover ketika sinyal jaringan saat ini lemah
+enum HandoverSensitivity {
+  /// Konservatif (Aturan ketat riset awal Ndegwa 2023, threshold HF tinggi)
+  conservative,
+  /// Seimbang (Rekomendasi adaptif untuk sinyal lemah dengan opportunistic gate)
+  balanced,
+  /// Agresif (Mengutamakan jaringan alternatif superior secepatnya)
+  aggressive,
+}
+
+extension HandoverSensitivityDisplay on HandoverSensitivity {
+  String get displayName {
+    switch (this) {
+      case HandoverSensitivity.conservative:
+        return 'Konservatif';
+      case HandoverSensitivity.balanced:
+        return 'Seimbang (Rekomendasi)';
+      case HandoverSensitivity.aggressive:
+        return 'Agresif (Cepat)';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case HandoverSensitivity.conservative:
+        return 'Hemat switching, hanya pindah jika sinyal hampir putus';
+      case HandoverSensitivity.balanced:
+        return 'Responsif saat Wi-Fi lemah dan seluler jauh lebih cepat';
+      case HandoverSensitivity.aggressive:
+        return 'Prioritas performa tertinggi, segera pindah ke link terbaik';
+    }
+  }
+}
+
 double unitInterval(double value) => value.clamp(0.0, 1.0).toDouble();
 
 void requireFinite(
