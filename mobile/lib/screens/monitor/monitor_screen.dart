@@ -5,10 +5,9 @@ import '../../core/simulation/simulation.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/algorithm_vs_baseline_card.dart';
 import '../../widgets/app_recommendation_card.dart';
-import '../../widgets/live_telemetry_source_card.dart';
 import '../../widgets/simulation_map_card.dart';
 
-/// Screen 6 — Cockpit Monitor Simulasi (Real-Time Playback & Sinyal RF Monokrom)
+/// Screen 6 — Cockpit Monitor Simulasi (Skenario HetNet 2D Kampus & Playback)
 class MonitorScreen extends StatelessWidget {
   const MonitorScreen({super.key});
 
@@ -21,8 +20,6 @@ class MonitorScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LiveTelemetrySourceCard(),
-            SizedBox(height: 14),
             _PlaybackControlsCard(),
             SizedBox(height: 14),
             SimulationMapCard(),
@@ -31,9 +28,9 @@ class MonitorScreen extends StatelessWidget {
             SizedBox(height: 14),
             AlgorithmVsBaselineCard(),
             SizedBox(height: 14),
-            _LiveDecisionBannerPlaceholder(),
+            LiveDecisionBanner(),
             SizedBox(height: 14),
-            _LiveNetworkCardsSectionPlaceholder(),
+            LiveNetworkCardsSection(),
             SizedBox(height: 24),
           ],
         ),
@@ -222,8 +219,8 @@ class _PlaybackControlsCard extends StatelessWidget {
 
 
 /// Banner Keputusan Handover Live (High-Contrast Monochrome Banner)
-class _LiveDecisionBannerPlaceholder extends StatelessWidget {
-  const _LiveDecisionBannerPlaceholder();
+class LiveDecisionBanner extends StatelessWidget {
+  const LiveDecisionBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -267,37 +264,43 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    tagText,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: Colors.white,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      tagText,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
-                if (targetId != null)
+                if (targetId != null) ...[
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppTheme.darkNavy,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     onPressed: () => context.read<SimulationController>().acceptHandover(),
                     child: Text(
-                      isUnavailable ? 'Beralih ke $targetDisplayName' : 'Terima Handover',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      isUnavailable ? 'Beralih Target' : 'Terima Handover',
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold),
                     ),
                   ),
+                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -331,37 +334,114 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
         side: BorderSide(color: context.borderColor, width: 1.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              tagText,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-                color: context.textSecondaryColor,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppTheme.successGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.successGreen.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, size: 12, color: AppTheme.successGreen),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            tagText,
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.4,
+                              color: AppTheme.successGreen,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF262626) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Kondisi: Prima',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: context.textSecondaryColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               mainTitle,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: context.textPrimaryColor,
                 letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               subText,
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: 11,
                 color: context.textSecondaryColor,
-                height: 1.3,
+                height: 1.35,
               ),
+            ),
+            const SizedBox(height: 12),
+            // Indikator Gate Handover Factor (HF) vs Ambang Batas
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'HF Gate: ${hf != null ? hf.toStringAsFixed(2) : '0.00'}',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.textPrimaryColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ambang: ${threshold.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 10, color: context.textSecondaryColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: ((hf ?? 0.0) / (threshold * 1.5)).clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: isDark ? const Color(0xFF262626) : const Color(0xFFE2E8F0),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      (hf ?? 0.0) > threshold ? AppTheme.errorRed : AppTheme.successGreen,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -371,8 +451,8 @@ class _LiveDecisionBannerPlaceholder extends StatelessWidget {
 }
 
 /// Section Kartu Jaringan (4G, 5G, Wi-Fi) Monokrom Modern
-class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
-  const _LiveNetworkCardsSectionPlaceholder();
+class LiveNetworkCardsSection extends StatelessWidget {
+  const LiveNetworkCardsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +496,7 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
 
             return Card(
               elevation: 0,
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
                 side: BorderSide(
@@ -424,8 +504,8 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                   width: isActive ? 1.5 : 1.0,
                 ),
               ),
-              child: ListTile(
-                dense: true,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
                 onTap: (!isActive && s.available)
                     ? () {
                         context.read<SimulationController>().switchActiveNetwork(s.id);
@@ -439,106 +519,197 @@ class _LiveNetworkCardsSectionPlaceholder extends StatelessWidget {
                         );
                       }
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                leading: Icon(
-                  s.technology == NetworkTechnology.nr
-                      ? Icons.five_g_outlined
-                      : (s.technology == NetworkTechnology.lte ? Icons.cell_tower : Icons.wifi),
-                  color: s.available ? context.textPrimaryColor : context.textTertiaryColor,
-                  size: 24,
-                ),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        s.displayName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: context.textPrimaryColor,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    if (isActive)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: activeBadgeColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'AKTIF',
-                          style: TextStyle(color: activeBadgeText, fontSize: 9, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
-                ),
-                subtitle: Text(
-                  'RSS: ${s.rssDbm.toStringAsFixed(1)} dBm · Rate: ${s.dataRateMbps.toStringAsFixed(1)} Mbps · Delay: ${s.delayMs.toStringAsFixed(1)} ms',
-                  style: TextStyle(fontSize: 11, color: context.textSecondaryColor),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: s.available
-                            ? (isDark ? const Color(0xFF1F2937) : AppTheme.surfaceBackground)
-                            : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2)),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: s.available
-                              ? context.borderColor
-                              : (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
-                        ),
-                      ),
-                      child: Text(
-                        s.available ? 'TERJANGKAU' : 'LUAR JANGKAUAN',
-                        style: TextStyle(
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.bold,
-                          color: s.available ? context.textPrimaryColor : AppTheme.errorRed,
-                        ),
-                      ),
-                    ),
-                    if (!isActive && s.available) ...[
-                      const SizedBox(width: 6),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white : AppTheme.darkNavy,
-                          foregroundColor: isDark ? AppTheme.pureBlack : Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Baris 1: Ikon + Nama Interface + Status Aktif + Status Jangkauan + Tombol Pakai
+                      Row(
+                        children: [
+                          Icon(
+                            s.technology == NetworkTechnology.nr
+                                ? Icons.five_g_outlined
+                                : (s.technology == NetworkTechnology.lte ? Icons.cell_tower : Icons.wifi),
+                            color: s.available ? context.textPrimaryColor : context.textTertiaryColor,
+                            size: 22,
                           ),
-                        ),
-                        onPressed: () {
-                          context.read<SimulationController>().switchActiveNetwork(s.id);
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Terhubung ke ${s.displayName}. Sistem mulai mengevaluasi kondisi jaringan.'),
-                              duration: const Duration(seconds: 2),
-                              behavior: SnackBarBehavior.floating,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    s.displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: context.textPrimaryColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isActive) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: activeBadgeColor,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'AKTIF',
+                                      style: TextStyle(color: activeBadgeText, fontSize: 9, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          );
-                        },
-                        child: const Text('Pakai', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: s.available
+                                  ? (isDark ? const Color(0xFF1F2937) : AppTheme.surfaceBackground)
+                                  : (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2)),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(
+                                color: s.available
+                                    ? context.borderColor
+                                    : (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA)),
+                              ),
+                            ),
+                            child: Text(
+                              s.available ? 'TERJANGKAU' : 'LUAR JANGKAUAN',
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.bold,
+                                color: s.available ? context.textPrimaryColor : AppTheme.errorRed,
+                              ),
+                            ),
+                          ),
+                          if (!isActive && s.available) ...[
+                            const SizedBox(width: 6),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isDark ? Colors.white : AppTheme.darkNavy,
+                                foregroundColor: isDark ? AppTheme.pureBlack : Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              onPressed: () {
+                                context.read<SimulationController>().switchActiveNetwork(s.id);
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Terhubung ke ${s.displayName}. Sistem mulai mengevaluasi kondisi jaringan.'),
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              child: const Text('Pakai', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Baris 2: Metrik Telemetri Penuh (Tanpa Terpotong)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CandidateMetricPill(
+                              icon: Icons.signal_cellular_alt_rounded,
+                              label: 'RSS',
+                              value: '${s.rssDbm.toStringAsFixed(1)} dBm',
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _CandidateMetricPill(
+                              icon: Icons.speed_rounded,
+                              label: 'Rate',
+                              value: '${s.dataRateMbps.toStringAsFixed(1)} Mbps',
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _CandidateMetricPill(
+                              icon: Icons.timer_outlined,
+                              label: 'Delay',
+                              value: '${s.delayMs.toStringAsFixed(1)} ms',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             );
           },
         ),
       ],
+    );
+  }
+}
+
+class _CandidateMetricPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _CandidateMetricPill({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2228) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: context.textSecondaryColor),
+          const SizedBox(width: 4),
+          Expanded(
+            child: RichText(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 10,
+                  color: context.textSecondaryColor,
+                ),
+                children: [
+                  TextSpan(text: '$label: '),
+                  TextSpan(
+                    text: value,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
