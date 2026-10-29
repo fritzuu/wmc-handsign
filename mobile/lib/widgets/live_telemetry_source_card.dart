@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,7 +6,7 @@ import '../core/simulation/simulation.dart';
 import '../theme/app_theme.dart';
 
 /// Card pemilih mode sumber data (Simulasi Kampus vs Live Hardware Sensor)
-/// serta penampil metrik fisik jaringan riil saat mode Live aktif.
+/// serta penampil metrik fisik jaringan riil (Wi-Fi & Data Seluler) saat mode Live aktif.
 class LiveTelemetrySourceCard extends StatelessWidget {
   const LiveTelemetrySourceCard({super.key});
 
@@ -15,13 +16,19 @@ class LiveTelemetrySourceCard extends StatelessWidget {
     final isLive = controller.isLiveMode;
     final liveSnapshot = controller.liveSnapshot;
     final isDark = context.isDark;
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final needsPermissions = isAndroid &&
+        (!liveSnapshot.hasLocationPermission ||
+            !liveSnapshot.hasPhonePermission);
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         side: BorderSide(
-          color: isLive ? AppTheme.accentBlue.withOpacity(0.5) : context.borderColor,
+          color: isLive
+              ? AppTheme.accentBlue.withOpacity(0.5)
+              : context.borderColor,
           width: isLive ? 1.5 : 1.0,
         ),
       ),
@@ -53,7 +60,7 @@ class LiveTelemetrySourceCard extends StatelessWidget {
                       ),
                       Text(
                         isLive
-                            ? 'Telemetri riil dari kartu jaringan perangkat saat ini'
+                            ? 'Telemetri riil dari kartu Wi-Fi & Data Seluler perangkat'
                             : 'Model propagasi HetNet 2D (4G, 5G, Wi-Fi)',
                         style: TextStyle(
                           fontSize: 11,
@@ -70,7 +77,8 @@ class LiveTelemetrySourceCard extends StatelessWidget {
             // Segmented Mode Selector Button
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E2228) : const Color(0xFFEEF2F6),
+                color:
+                    isDark ? const Color(0xFF1E2228) : const Color(0xFFEEF2F6),
                 borderRadius: BorderRadius.circular(10),
               ),
               padding: const EdgeInsets.all(3),
@@ -109,6 +117,82 @@ class LiveTelemetrySourceCard extends StatelessWidget {
             // Metrik Live Hardware jika mode live aktif
             if (isLive) ...[
               const SizedBox(height: 14),
+
+              // Banner Permintaan Izin Android jika belum diberikan
+              if (needsPermissions) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF2A2215)
+                        : const Color(0xFFFFF9EB),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withOpacity(0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.security_rounded,
+                            size: 16,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Izin Sensor Diperlukan di Android',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Android memerlukan izin Lokasi untuk membaca nama Wi-Fi (SSID) dan kekuatan sinyal fisik (RSSI), serta izin Telepon untuk mendeteksi operator & tipe seluler (4G/5G).',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.textPrimaryColor,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 34,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            controller.requestHardwarePermissions();
+                          },
+                          icon: const Icon(Icons.check_circle_outline, size: 16),
+                          label: const Text(
+                            'Izinkan Akses Sensor',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF59E0B),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -123,6 +207,7 @@ class LiveTelemetrySourceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Status Telemetri Bar
                     Row(
                       children: [
                         Container(
@@ -146,23 +231,53 @@ class LiveTelemetrySourceCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentBlue.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            liveSnapshot.activeTransport == 'cellular'
+                                ? 'Aktif: Seluler'
+                                : (liveSnapshot.activeTransport == 'wifi'
+                                    ? 'Aktif: Wi-Fi'
+                                    : liveSnapshot.interfaceType),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.accentBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Seksi Wi-Fi Telemetri
+                    Row(
+                      children: [
+                        const Icon(Icons.wifi, size: 14, color: AppTheme.accentBlue),
+                        const SizedBox(width: 5),
                         Text(
-                          liveSnapshot.networkName,
+                          'Wi-Fi: ${liveSnapshot.networkName}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: context.textPrimaryColor,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Expanded(
                           child: _LiveMetricTile(
-                            label: 'Latensi RTT Riil',
-                            value: '${liveSnapshot.delayMs.toStringAsFixed(1)} ms',
+                            label: 'Latensi RTT',
+                            value:
+                                '${liveSnapshot.delayMs.toStringAsFixed(1)} ms',
                             icon: Icons.timer_outlined,
                             isGood: liveSnapshot.delayMs < 50,
                           ),
@@ -170,8 +285,9 @@ class LiveTelemetrySourceCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _LiveMetricTile(
-                            label: 'Throughput Link',
-                            value: '${liveSnapshot.throughputMbps.toStringAsFixed(0)} Mbps',
+                            label: 'Kecepatan Link',
+                            value:
+                                '${liveSnapshot.throughputMbps.toStringAsFixed(0)} Mbps',
                             icon: Icons.speed_rounded,
                             isGood: liveSnapshot.throughputMbps > 25,
                           ),
@@ -180,9 +296,103 @@ class LiveTelemetrySourceCard extends StatelessWidget {
                         Expanded(
                           child: _LiveMetricTile(
                             label: 'Kuat Sinyal',
-                            value: '${liveSnapshot.rssDbm.toStringAsFixed(0)} dBm',
-                            icon: Icons.signal_cellular_alt_rounded,
+                            value:
+                                '${liveSnapshot.rssDbm.toStringAsFixed(0)} dBm',
+                            icon: Icons.wifi_find_rounded,
                             isGood: liveSnapshot.rssDbm > -70,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 10),
+
+                    // Seksi Jaringan Data Seluler
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.signal_cellular_alt_rounded,
+                          size: 14,
+                          color: AppTheme.accentBlue,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Seluler: ${liveSnapshot.cellularOperator} (${liveSnapshot.cellularType})',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: context.textPrimaryColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (isAndroid)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: liveSnapshot.activeTransport == 'cellular'
+                                  ? AppTheme.successGreen.withOpacity(0.15)
+                                  : (liveSnapshot.isCellularConnected
+                                      ? Colors.orange.withOpacity(0.15)
+                                      : Colors.grey.withOpacity(0.15)),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              liveSnapshot.activeTransport == 'cellular'
+                                  ? 'Trafik Aktif'
+                                  : (liveSnapshot.isCellularConnected
+                                      ? 'Standby (Wi-Fi Utama)'
+                                      : 'Tidak Aktif'),
+                              style: TextStyle(
+                                fontSize: 9.0,
+                                color: liveSnapshot.activeTransport == 'cellular'
+                                    ? AppTheme.successGreen
+                                    : (liveSnapshot.isCellularConnected
+                                        ? Colors.orange
+                                        : Colors.grey),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _LiveMetricTile(
+                            label: 'Sinyal Seluler',
+                            value:
+                                '${liveSnapshot.cellularRssiDbm.toStringAsFixed(0)} dBm',
+                            icon: Icons.cell_tower_rounded,
+                            isGood: liveSnapshot.cellularRssiDbm > -85,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _LiveMetricTile(
+                            label: liveSnapshot.activeTransport == 'cellular'
+                                ? 'Throughput Riil'
+                                : 'Throughput Sinyal',
+                            value:
+                                '${liveSnapshot.cellularThroughputMbps.toStringAsFixed(1)} Mbps',
+                            icon: Icons.download_rounded,
+                            isGood: liveSnapshot.cellularThroughputMbps > 20,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _LiveMetricTile(
+                            label: 'Status 5G',
+                            value: liveSnapshot.is5gAvailable
+                                ? '5G AKTIF'
+                                : 'TIDAK ADA 5G',
+                            icon: liveSnapshot.is5gAvailable
+                                ? Icons.flash_on_rounded
+                                : Icons.flash_off_rounded,
+                            isGood: liveSnapshot.is5gAvailable,
                           ),
                         ),
                       ],
