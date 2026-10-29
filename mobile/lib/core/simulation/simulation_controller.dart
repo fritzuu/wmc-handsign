@@ -32,6 +32,8 @@ class SimulationController extends ChangeNotifier {
   SimulationDataSourceMode _dataSourceMode = SimulationDataSourceMode.simulationHetNet;
   final NetworkProbeService _probeService;
   late final LiveNetworkDataProvider _liveProvider;
+  StreamSubscription<LiveProbeSnapshot>? _probeSubscription;
+  bool _isDisposed = false;
   final NetworkDataProvider _syntheticProvider;
   NetworkDataProvider _networkProvider;
   HandoverDecisionEngine _engine;
@@ -75,11 +77,12 @@ class SimulationController extends ChangeNotifier {
 
   static final HandoverConfiguration defaultPracticalConfiguration =
       HandoverConfiguration(
+    requirements: HandoverConfiguration.modernRequirements(),
     thresholds: const {
-      TrafficClass.conversational: 0.40,
-      TrafficClass.streaming: 0.45,
-      TrafficClass.interactive: 0.45,
-      TrafficClass.background: 0.50,
+      TrafficClass.conversational: 0.38,
+      TrafficClass.streaming: 0.42,
+      TrafficClass.interactive: 0.42,
+      TrafficClass.background: 0.48,
     },
   );
 
@@ -119,7 +122,8 @@ class SimulationController extends ChangeNotifier {
     _liveProvider = LiveNetworkDataProvider(probeService: _probeService);
 
     // Dengarkan pembaruan probe real-time untuk memperbarui evaluasi secara live
-    _probeService.snapshotStream.listen((_) {
+    _probeSubscription = _probeService.snapshotStream.listen((_) {
+      if (_isDisposed) return;
       if (_dataSourceMode == SimulationDataSourceMode.liveHardwareProbe) {
         _evaluateCurrentState();
         notifyListeners();
@@ -128,6 +132,74 @@ class SimulationController extends ChangeNotifier {
 
     // Evaluasi awal pada t = 0s
     _evaluateCurrentState();
+  }
+
+  HandoverSensitivity _sensitivity = HandoverSensitivity.balanced;
+  bool _autoSwitchProcessBinding = false;
+  String _processBindingStatus = 'default';
+
+  HandoverSensitivity get sensitivity => _sensitivity;
+  bool get autoSwitchProcessBinding => _autoSwitchProcessBinding;
+  String get processBindingStatus => _processBindingStatus;
+
+  /// Mengatur tingkat sensitivitas evaluasi handover (Konservatif, Seimbang, Agresif).
+  void setSensitivity(HandoverSensitivity sensitivity) {
+    if (_sensitivity == sensitivity) return;
+    _sensitivity = sensitivity;
+    _stabilizer.reset();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
+
+  /// Mengaktifkan atau menonaktifkan fitur Auto-Switch Proses (App-Level Network Binding).
+  /// Jika aktif, ketika handover direkomendasikan, soket aplikasi otomatis di-bind ke jaringan target.
+  void setAutoSwitchProcessBinding(bool enabled) {
+    if (_autoSwitchProcessBinding == enabled) return;
+    _autoSwitchProcessBinding = enabled;
+    if (!enabled) {
+      _probeService.bindProcessToNetwork('default');
+      _processBindingStatus = 'default';
+    } else {
+      _checkAndApplyProcessBinding();
+    }
+    notifyListeners();
+  }
+
+  /// Membuka panel kontrol internet Android secara langsung.
+  Future<bool> openInternetPanel() async {
+    return await _probeService.openInternetPanel();
+  }
+
+  /// Secara manual memicu eksekusi pengikatan proses aplikasi ke target jaringan yang direkomendasikan.
+  Future<bool> executeManualProcessSwitch(String targetNetworkId) async {
+    final target = targetNetworkId.contains('wifi') ? 'wifi' : 'cellular';
+    final success = await _probeService.bindProcessToNetwork(target);
+    if (success) {
+      _processBindingStatus = target;
+      // Perbarui juga status active network di controller agar sinkron
+      _activeNetworkId = targetNetworkId;
+      _stabilizer.reset();
+      _evaluateCurrentState();
+      notifyListeners();
+    }
+    return success;
+  }
+
+  void _checkAndApplyProcessBinding() async {
+    if (!_autoSwitchProcessBinding) return;
+    if (isHandoverRecommended && recommendedTargetId != null) {
+      final target = recommendedTargetId!.contains('wifi') ? 'wifi' : 'cellular';
+      if (_processBindingStatus != target) {
+        final ok = await _probeService.bindProcessToNetwork(target);
+        if (ok) {
+          _processBindingStatus = target;
+          _activeNetworkId = recommendedTargetId!;
+          _stabilizer.reset();
+          _evaluateCurrentState();
+          notifyListeners();
+        }
+      }
+    }
   }
 
   // --- Getters ---
@@ -155,7 +227,20 @@ class SimulationController extends ChangeNotifier {
     if (mode == SimulationDataSourceMode.liveHardwareProbe) {
       _networkProvider = _liveProvider;
       _probeService.startMonitoring(intervalSeconds: 1.5);
-      _activeNetworkId = 'wifi';
+      if (_processBindingStatus == 'cellular') {
+        _activeNetworkId = '4g_lte';
+      } else if (_processBindingStatus == 'wifi') {
+        _activeNetworkId = 'wifi';
+      } else {
+        final activeTransport = _probeService.latestSnapshot.activeTransport;
+        if (activeTransport == 'cellular') {
+          _activeNetworkId = _probeService.latestSnapshot.cellularTech == 'nr'
+              ? '5g_nr'
+              : '4g_lte';
+        } else {
+          _activeNetworkId = 'wifi';
+        }
+      }
     } else {
       _probeService.stopMonitoring();
       _networkProvider = _syntheticProvider;
@@ -163,6 +248,30 @@ class SimulationController extends ChangeNotifier {
     _stabilizer.reset();
     _evaluateCurrentState();
     notifyListeners();
+  }
+
+  /// Meminta izin sensor hardware Android (Lokasi & Telepon) kepada pengguna.
+  Future<void> requestHardwarePermissions() async {
+    await _probeService.requestAndroidPermissions();
+    await _probeService.probeOnce();
+    _evaluateCurrentState();
+    notifyListeners();
+  }
+
+  bool get isSimulatedLocationRevoked =>
+      _probeService.isSimulatedLocationRevoked;
+
+  /// Beralih antara pembacaan izin riil dan simulasi izin dicabut untuk pengetesan.
+  void toggleSimulatedLocationRevocation() {
+    _probeService.setSimulatedLocationRevoked(
+        !_probeService.isSimulatedLocationRevoked);
+    _evaluateCurrentState();
+    notifyListeners();
+  }
+
+  /// Membuka halaman detail pengaturan aplikasi di Android agar user bisa revoke/grant izin di OS.
+  Future<void> openAppSettings() async {
+    await _probeService.openAppSettings();
   }
 
   /// Jumlah ping-pong handover konvensional (RSS-only) yang berhasil dicegah
@@ -342,6 +451,8 @@ class SimulationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<NetworkSnapshot> get currentSnapshots => _currentSnapshots;
+
   /// Snapshot dari jaringan aktif saat ini.
   NetworkSnapshot? get activeNetworkSnapshot =>
       _currentSnapshots.where((s) => s.id == _activeNetworkId).firstOrNull;
@@ -509,6 +620,7 @@ class SimulationController extends ChangeNotifier {
       velocityMps: velocityMps,
       currentNetworkId: _activeNetworkId,
       networks: _currentSnapshots,
+      sensitivity: _sensitivity,
     );
 
     // Terapkan penstabil (hysteresis gain + dwell time)
@@ -533,6 +645,11 @@ class SimulationController extends ChangeNotifier {
       activeSnapshot: activeNetworkSnapshot,
       recommendedSnapshot: recSnap,
     );
+
+    // Otomatis terapkan binding proses jika opsi auto-switch aktif
+    if (_autoSwitchProcessBinding && isHandoverRecommended && recommendedTargetId != null) {
+      _checkAndApplyProcessBinding();
+    }
 
     // Pelacakan Komparasi Head-to-Head: RSS-only ping-pong vs Smart VHO
     final currentRssTarget = _latestDecision?.baselineRssNetworkId;
@@ -749,7 +866,9 @@ class SimulationController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _timer?.cancel();
+    _probeSubscription?.cancel();
     _probeService.dispose();
     super.dispose();
   }
